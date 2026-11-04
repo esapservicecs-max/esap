@@ -1,0 +1,6 @@
+{
+  "name": "SiamAuth - ระบบล็อคอินและสมัครสมาชิก",
+  "description": "ระบบเข้าสู่ระบบและสมัครสมาชิกออนไลน์ระดับมืออาชีพ พร้อมจัดการข้อมูลโปรไฟล์ ความปลอดภัย และแดชบอร์ดสมาชิก",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
