@@ -135,7 +135,7 @@ export default function App() {
                 email: app.email,
                 phone: app.phone,
                 role: 'member',
-                avatar: '/src/assets/images/member_avatar_male_1793780213414.jpg',
+                avatar: '/assets/images/member_avatar_male_1793780213414.jpg',
                 bio: `ผู้ประกอบการ ${app.nswCategory} · โปรไฟล์ NSW: ${app.nswProfile}`,
                 createdAt: app.submittedAt,
                 lastLoginAt: new Date().toISOString(),

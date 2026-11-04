@@ -1,9 +1,9 @@
 import { User, Session, ActivityLog, RegistrationApplication, CaDocument } from '../types/auth';
 
 export const ASSETS = {
-  showcase: '/src/assets/images/auth_brand_showcase_1793780212572.jpg',
-  avatarFemale: '/src/assets/images/member_avatar_female_1793780212520.jpg',
-  avatarMale: '/src/assets/images/member_avatar_male_1793780213414.jpg',
+  showcase: '/assets/images/auth_brand_showcase_1793780212572.jpg',
+  avatarFemale: '/assets/images/member_avatar_female_1793780212520.jpg',
+  avatarMale: '/assets/images/member_avatar_male_1793780213414.jpg',
 };
 
 const INITIAL_USERS: User[] = [

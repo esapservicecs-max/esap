@@ -469,7 +469,7 @@ export const RegistrationFlow: React.FC<RegistrationFlowProps> = ({
       email: finalEmail,
       phone: finalPhone,
       role: 'member',
-      avatar: '/src/assets/images/member_avatar_male_1793780213414.jpg',
+      avatar: '/assets/images/member_avatar_male_1793780213414.jpg',
       bio: '',
       createdAt: new Date().toISOString(),
       lastLoginAt: new Date().toISOString(),
