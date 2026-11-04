@@ -71,7 +71,7 @@ export interface RegistrationApplication {
 
   // Step 2: ข้อมูลตามแบบฟอร์ม ESAP (Paperless ebXML – Application Form)
   // ส่วน Ref ID Paperless Type
-  paperlessType: 'Customs Broker' | 'Service Counter' | 'Exporter/Importer';
+  paperlessType?: 'Customs Broker' | 'Service Counter' | 'Exporter/Importer' | string;
   refIdTest: string;
   refIdProduction: string;
 
@@ -82,7 +82,7 @@ export interface RegistrationApplication {
   businessType: string;
   juristicNumber: string; // ทะเบียนนิติบุคคลเลขที่
   taxId: string; // เลขประจำตัวผู้เสียภาษีอากร
-  branchType: 'headquarters' | 'branch';
+  branchType?: 'headquarters' | 'branch' | string;
   branchNumber?: string;
 
   // สถานที่จัดส่งใบแจ้งค่าใช้บริการ/วางบิล

@@ -486,7 +486,7 @@ export const MemberDashboard: React.FC<MemberDashboardProps> = ({
                       {t.fullName}
                     </span>
                     <span className="font-semibold text-slate-900 dark:text-white text-sm">
-                      {user.name}
+                      {user.name || '-'}
                     </span>
                   </div>
 
@@ -504,7 +504,7 @@ export const MemberDashboard: React.FC<MemberDashboardProps> = ({
                       {t.email}
                     </span>
                     <span className="font-semibold text-slate-900 dark:text-white text-sm">
-                      {user.email}
+                      {user.email || '-'}
                     </span>
                   </div>
 
@@ -722,7 +722,7 @@ export const MemberDashboard: React.FC<MemberDashboardProps> = ({
               <button
                 type="button"
                 onClick={() => {
-                  const refText = userApp?.refIdProduction || userApp?.refIdTest || 'PROD-EXP-2024';
+                  const refText = userApp?.refIdProduction || userApp?.refIdTest || '-';
                   navigator.clipboard.writeText(refText);
                   setCopiedRef(true);
                   setTimeout(() => setCopiedRef(false), 2000);
@@ -764,7 +764,7 @@ export const MemberDashboard: React.FC<MemberDashboardProps> = ({
                 </span>
                 <div className="flex flex-wrap items-center gap-4 sm:gap-6">
                   {(['Customs Broker', 'Service Counter', 'Exporter/Importer'] as const).map((type) => {
-                    const isSelected = (userApp?.paperlessType || user.paperlessType || 'Exporter/Importer') === type;
+                    const isSelected = (userApp?.paperlessType || user.paperlessType || '') === type;
                     return (
                       <div key={type} className="flex items-center gap-2">
                         <div

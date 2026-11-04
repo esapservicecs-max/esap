@@ -60,14 +60,14 @@ export const RegistrationFlow: React.FC<RegistrationFlowProps> = ({
   const [email, setEmail] = useState(initialApplication?.email || '');
   const [phone, setPhone] = useState(initialApplication?.phone || '');
   const [nswCategory, setNswCategory] = useState(
-    initialApplication?.nswCategory || 'NSW Gateway (ระบบเชื่อมโยงข้อมูลศุลกากร)'
+    initialApplication?.nswCategory || ''
   );
   const [nswProfile, setNswProfile] = useState(initialApplication?.nswProfile || '');
 
   // Step 2: ESAP Paperless ebXML Application Form (ตามรูปที่แนบ)
   // Section 1: Ref ID Paperless Type
-  const [paperlessType, setPaperlessType] = useState<'Customs Broker' | 'Service Counter' | 'Exporter/Importer'>(
-    initialApplication?.paperlessType || 'Exporter/Importer'
+  const [paperlessType, setPaperlessType] = useState<string>(
+    initialApplication?.paperlessType || ''
   );
   const [refIdTest, setRefIdTest] = useState(initialApplication?.refIdTest || '');
   const [refIdProduction, setRefIdProduction] = useState(initialApplication?.refIdProduction || '');
@@ -80,8 +80,8 @@ export const RegistrationFlow: React.FC<RegistrationFlowProps> = ({
   const [businessType, setBusinessType] = useState(initialApplication?.businessType || '');
   const [juristicNumber, setJuristicNumber] = useState(initialApplication?.juristicNumber || '');
   const [taxId, setTaxId] = useState(initialApplication?.taxId || '');
-  const [branchType, setBranchType] = useState<'headquarters' | 'branch'>(
-    initialApplication?.branchType || 'headquarters'
+  const [branchType, setBranchType] = useState<string>(
+    initialApplication?.branchType || ''
   );
   const [branchNumber, setBranchNumber] = useState(initialApplication?.branchNumber || '');
 
@@ -117,8 +117,8 @@ export const RegistrationFlow: React.FC<RegistrationFlowProps> = ({
   const [installEmail, setInstallEmail] = useState(initialApplication?.installEmail || '');
 
   // Section 5: ข้อมูลติดต่อ/ผู้ประสานงาน
-  const [contactPrefix, setContactPrefix] = useState<'นาย' | 'นาง' | 'นางสาว' | string>(
-    initialApplication?.contactPrefix || 'นาย'
+  const [contactPrefix, setContactPrefix] = useState<string>(
+    initialApplication?.contactPrefix || ''
   );
   const [contactFirstName, setContactFirstName] = useState(initialApplication?.contactFirstName || '');
   const [contactLastName, setContactLastName] = useState(initialApplication?.contactLastName || '');
@@ -283,15 +283,6 @@ export const RegistrationFlow: React.FC<RegistrationFlowProps> = ({
   const handleNextFromStep1 = (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
-
-    const randomSuffix = Math.floor(100 + Math.random() * 900);
-    if (!username.trim()) setUsername(`user_demo_${randomSuffix}`);
-    if (!password) setPassword('Password123!');
-    if (!confirmPassword) setConfirmPassword('Password123!');
-    if (!email.trim()) setEmail(`demo_${randomSuffix}@esapservice.co.th`);
-    if (!phone.trim()) setPhone('081-234-5678');
-    if (!nswProfile.trim()) setNswProfile(`NSW-TH-2024-${randomSuffix}00`);
-
     setCurrentStep(2);
     window.scrollTo({ top: 100, behavior: 'smooth' });
   };
@@ -300,23 +291,6 @@ export const RegistrationFlow: React.FC<RegistrationFlowProps> = ({
   const handleNextFromStep2 = (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
-
-    const randomSuffix = Math.floor(100 + Math.random() * 900);
-    if (!companyNameTh.trim()) setCompanyNameTh(`บริษัท ผู้ขอใช้บริการทดสอบ ${randomSuffix} จำกัด`);
-    if (!companyNameEn.trim()) setCompanyNameEn(`Test Applicant ${randomSuffix} Co., Ltd.`);
-    if (!taxId.trim()) setTaxId(`01055670${randomSuffix}99`);
-    if (!businessType.trim()) setBusinessType('นำเข้า-ส่งออก และการค้าระหว่างประเทศ');
-    if (!juristicNumber.trim()) setJuristicNumber(`01055670${randomSuffix}99`);
-
-    if (!billingHouseNo.trim()) setBillingHouseNo('88/9');
-    if (!billingRoad.trim()) setBillingRoad('ถนนสาทร');
-    if (!billingProvince.trim()) setBillingProvince('กรุงเทพมหานคร');
-    if (!billingPostalCode.trim()) setBillingPostalCode('10120');
-
-    if (!contactFirstName.trim()) setContactFirstName('สมศักดิ์');
-    if (!contactLastName.trim()) setContactLastName('เจริญผล');
-    if (!contactMobile.trim()) setContactMobile(phone || '081-234-5678');
-
     setCurrentStep(3);
     window.scrollTo({ top: 100, behavior: 'smooth' });
   };
@@ -461,10 +435,13 @@ export const RegistrationFlow: React.FC<RegistrationFlowProps> = ({
 
     saveOrUpdateApplication(application);
 
+    const contactFullName = `${contactPrefix ? contactPrefix + ' ' : ''}${contactFirstName.trim()} ${contactLastName.trim()}`.trim();
+    const finalName = finalCompanyName || contactFullName || '';
+
     // Create user in system and log in directly with exact registered data
     const newUser: User = {
       id: `usr_${Date.now()}`,
-      name: finalCompanyName || finalUsername,
+      name: finalName,
       username: finalUsername,
       email: finalEmail,
       phone: finalPhone,
@@ -781,6 +758,7 @@ export const RegistrationFlow: React.FC<RegistrationFlowProps> = ({
                   onChange={(e) => setNswCategory(e.target.value)}
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-emerald-500"
                 >
+                  <option value="">-- ยังไม่เลือกหมวดการใช้งาน (เว้นว่างได้) --</option>
                   {nswCategories.map((cat, idx) => (
                     <option key={idx} value={cat}>
                       {cat}
@@ -1008,9 +986,10 @@ export const RegistrationFlow: React.FC<RegistrationFlowProps> = ({
                   </label>
                   <select
                     value={branchType}
-                    onChange={(e) => setBranchType(e.target.value as 'headquarters' | 'branch')}
+                    onChange={(e) => setBranchType(e.target.value)}
                     className="w-full px-3 py-2 text-xs sm:text-sm rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
                   >
+                    <option value="">-- ไม่ระบุ --</option>
                     <option value="headquarters">สำนักงานใหญ่</option>
                     <option value="branch">สาขา</option>
                   </select>
@@ -1309,6 +1288,7 @@ export const RegistrationFlow: React.FC<RegistrationFlowProps> = ({
                     onChange={(e) => setContactPrefix(e.target.value)}
                     className="w-full px-2.5 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
                   >
+                    <option value="">-- ไม่ระบุ --</option>
                     <option value="นาย">นาย</option>
                     <option value="นาง">นาง</option>
                     <option value="นางสาว">นางสาว</option>

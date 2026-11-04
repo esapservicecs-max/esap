@@ -412,25 +412,31 @@ export function updateApplicationByCs(
     if (!existing) {
       const newUser: User = {
         id: `usr_${Date.now()}`,
-        name: target.companyName,
+        name: target.companyNameTh || target.companyName || '',
         username: target.username,
-        email: target.email,
-        phone: target.phone,
+        email: target.email || '',
+        phone: target.phone || '',
         role: 'member',
         avatar: ASSETS.avatarMale,
-        bio: `ผู้ประกอบการ ${target.nswCategory} - NSW Profile: ${target.nswProfile}`,
+        bio: '',
         createdAt: target.submittedAt,
         lastLoginAt: new Date().toISOString(),
         twoFactorEnabled: false,
         status: 'active',
-        companyName: target.companyName,
-        taxId: target.taxId,
-        nswProfile: target.nswProfile,
-        nswCategory: target.nswCategory,
+        companyName: target.companyName || '',
+        companyNameTh: target.companyNameTh || '',
+        companyNameEn: target.companyNameEn || '',
+        taxId: target.taxId || '',
+        nswProfile: target.nswProfile || '',
+        nswCategory: target.nswCategory || '',
         applicationId: target.id,
+        businessType: target.businessType || '',
+        juristicNumber: target.juristicNumber || '',
+        paperlessType: target.paperlessType || '',
       };
       saveUsers([newUser, ...users]);
-      savePassword(target.email, target.password || 'Password123!');
+      if (target.email) savePassword(target.email, target.password || 'Password123!');
+      if (target.username) savePassword(target.username, target.password || 'Password123!');
     }
   }
 
