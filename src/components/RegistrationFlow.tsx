@@ -190,6 +190,24 @@ export const RegistrationFlow: React.FC<RegistrationFlowProps> = ({
         status: 'pending',
       },
       {
+        id: 'doc_poa',
+        name: 'หนังสือมอบอำนาจพร้อมติดอากรสแตมป์ (ถ้ามี)',
+        type: 'power_of_attorney',
+        fileName: '',
+        fileSize: '',
+        uploadedAt: '',
+        status: 'pending',
+      },
+      {
+        id: 'doc_attorney_id',
+        name: 'สำเนาบัตรผู้รับมอบอำนาจ',
+        type: 'attorney_id',
+        fileName: '',
+        fileSize: '',
+        uploadedAt: '',
+        status: 'pending',
+      },
+      {
         id: 'doc_2',
         name: 'หนังสือรับรองนิติบุคคล (DBD คัดสำเนาไม่เกิน 6 เดือน)',
         type: 'company_cert',
@@ -302,6 +320,24 @@ export const RegistrationFlow: React.FC<RegistrationFlowProps> = ({
         type: 'pp20',
         fileName: 'PP20_Verified_2024.pdf',
         fileSize: '1.2 MB',
+        uploadedAt: new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }),
+        status: 'valid',
+      },
+      {
+        id: 'doc_poa',
+        name: 'หนังสือมอบอำนาจพร้อมติดอากรสแตมป์ (ถ้ามี)',
+        type: 'power_of_attorney',
+        fileName: 'Power_Of_Attorney_Stamped.pdf',
+        fileSize: '1.4 MB',
+        uploadedAt: new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }),
+        status: 'valid',
+      },
+      {
+        id: 'doc_attorney_id',
+        name: 'สำเนาบัตรผู้รับมอบอำนาจ',
+        type: 'attorney_id',
+        fileName: 'Attorney_ID_Card_Signed.jpg',
+        fileSize: '780 KB',
         uploadedAt: new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }),
         status: 'valid',
       },
@@ -1595,6 +1631,24 @@ export const RegistrationFlow: React.FC<RegistrationFlowProps> = ({
                       status: 'valid',
                     },
                     {
+                      id: 'doc_poa',
+                      name: 'หนังสือมอบอำนาจพร้อมติดอากรสแตมป์ (ถ้ามี)',
+                      type: 'power_of_attorney',
+                      fileName: 'Power_Of_Attorney_Stamped.pdf',
+                      fileSize: '1.4 MB',
+                      uploadedAt: 'เพิ่งอัปโหลด',
+                      status: 'valid',
+                    },
+                    {
+                      id: 'doc_attorney_id',
+                      name: 'สำเนาบัตรผู้รับมอบอำนาจ',
+                      type: 'attorney_id',
+                      fileName: 'Attorney_ID_Card_Signed.jpg',
+                      fileSize: '780 KB',
+                      uploadedAt: 'เพิ่งอัปโหลด',
+                      status: 'valid',
+                    },
+                    {
                       id: 'doc_2',
                       name: 'หนังสือรับรองนิติบุคคล (DBD คัดสำเนาไม่เกิน 6 เดือน)',
                       type: 'company_cert',
@@ -1672,6 +1726,10 @@ export const RegistrationFlow: React.FC<RegistrationFlowProps> = ({
                           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                             {doc.type === 'pp20'
                               ? t.docPp20Desc
+                              : doc.type === 'power_of_attorney'
+                              ? t.docPoaDesc
+                              : doc.type === 'attorney_id'
+                              ? t.docAttorneyIdDesc
                               : doc.type === 'company_cert'
                               ? t.docCompanyCertDesc
                               : doc.type === 'director_id'

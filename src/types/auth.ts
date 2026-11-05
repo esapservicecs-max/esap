@@ -61,7 +61,7 @@ export type ApplicationStatus = 'pending_cs' | 'needs_revision' | 'approved' | '
 export interface CaDocument {
   id: string;
   name: string;
-  type: 'pp20' | 'company_cert' | 'director_id' | 'ca_request' | 'other';
+  type: 'pp20' | 'company_cert' | 'director_id' | 'ca_request' | 'power_of_attorney' | 'attorney_id' | 'other' | string;
   fileName: string;
   fileSize: string;
   uploadedAt: string;

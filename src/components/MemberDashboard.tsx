@@ -1032,10 +1032,12 @@ export const MemberDashboard: React.FC<MemberDashboardProps> = ({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                 {(
                   userApp?.documents || [
-                    { id: '1', name: '1. สำเนา ภ.พ.20 (ภพ.20)', type: 'pp20', fileName: '', fileSize: '', uploadedAt: '', status: 'pending' },
-                    { id: '2', name: '2. หนังสือรับรองนิติบุคคล (DBD)', type: 'company_cert', fileName: '', fileSize: '', uploadedAt: '', status: 'pending' },
-                    { id: '3', name: '3. สำเนาบัตรประชาชนกรรมการผู้มีอำนาจ', type: 'director_id', fileName: '', fileSize: '', uploadedAt: '', status: 'pending' },
-                    { id: '4', name: '4. เอกสารคำขอใช้งาน Digital Certificate (CA)', type: 'ca_request', fileName: '', fileSize: '', uploadedAt: '', status: 'pending' },
+                    { id: '1', name: 'สำเนา ภ.พ.20 (ภพ.20)', type: 'pp20', fileName: '', fileSize: '', uploadedAt: '', status: 'pending' },
+                    { id: 'poa', name: 'หนังสือมอบอำนาจพร้อมติดอากรสแตมป์ (ถ้ามี)', type: 'power_of_attorney', fileName: '', fileSize: '', uploadedAt: '', status: 'pending' },
+                    { id: 'attorney_id', name: 'สำเนาบัตรผู้รับมอบอำนาจ', type: 'attorney_id', fileName: '', fileSize: '', uploadedAt: '', status: 'pending' },
+                    { id: '2', name: 'หนังสือรับรองนิติบุคคล (DBD คัดสำเนาไม่เกิน 6 เดือน)', type: 'company_cert', fileName: '', fileSize: '', uploadedAt: '', status: 'pending' },
+                    { id: '3', name: 'สำเนาบัตรประชาชนกรรมการผู้มีอำนาจ (พร้อมลงนามรับรอง)', type: 'director_id', fileName: '', fileSize: '', uploadedAt: '', status: 'pending' },
+                    { id: '4', name: 'เอกสารคำขอใช้งาน Digital Certificate / ใบสมัคร CA (ไฟล์ .p12)', type: 'ca_request', fileName: '', fileSize: '', uploadedAt: '', status: 'pending' },
                   ]
                 ).map((doc: CaDocument) => {
                   const isAttached = Boolean(doc.fileName);
