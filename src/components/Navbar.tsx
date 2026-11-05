@@ -81,14 +81,6 @@ export const Navbar: React.FC<NavbarProps> = ({
             <span>{t.trackApplication}</span>
           </button>
 
-          <button
-            type="button"
-            onClick={() => window.dispatchEvent(new CustomEvent('open_cs_console'))}
-            className="hidden lg:inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 rounded-lg transition-colors whitespace-nowrap shrink-0"
-          >
-            <span>🛡️ {t.csConsole}</span>
-          </button>
-
           {user && (
             <div className="hidden md:flex items-center gap-3 text-xs text-slate-600 dark:text-slate-400">
               <span className="font-medium text-slate-900 dark:text-white">{t.memberPortal}</span>

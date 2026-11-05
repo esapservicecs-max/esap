@@ -1,6 +1,6 @@
 export const translations = {
   th: {
-    brandName: 'SiamAuth & NSW Portal',
+    brandName: 'esap testlogin',
     tagline: 'ระบบลงทะเบียนและยืนยันตัวตนดิจิทัล NSW & CA',
     login: 'เข้าสู่ระบบ',
     register: 'สมัครสมาชิก',
@@ -162,7 +162,7 @@ export const translations = {
     submitApplication: 'ส่งข้อมูลให้ CS ตรวจสอบ',
   },
   en: {
-    brandName: 'SiamAuth & NSW Portal',
+    brandName: 'esap testlogin',
     tagline: 'NSW & CA Digital Identity Onboarding',
     login: 'Sign In',
     register: 'Sign Up',
