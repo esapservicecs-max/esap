@@ -600,42 +600,8 @@ export const RegistrationFlow: React.FC<RegistrationFlowProps> = ({
 
   return (
     <div className="w-full max-w-4xl mx-auto my-6 px-4">
-      {/* 4-Step Diagram Flow Visualizer */}
-      <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 sm:p-7 border border-slate-200 dark:border-slate-800 shadow-md mb-8">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 pb-3 border-b border-slate-100 dark:border-slate-800">
-          <div>
-            <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2.5 flex-wrap">
-              <span>{t.createYourAccount}</span>
-              <span className="text-xs px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-medium">
-                โหมดทดสอบ (ไม่ต้องกรอกครบทุกช่อง)
-              </span>
-            </h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-              ขั้นตอนที่ 2 ปรับฟอร์มเป็น &quot;ใบสมัครสมาชิกโปรแกรม ESAP (Paperless ebXML)&quot; ตามแบบฟอร์มที่ระบุ
-            </p>
-          </div>
-
-          <div className="flex items-center gap-2 shrink-0">
-            <button
-              type="button"
-              onClick={handleAutoFillSampleData}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 rounded-xl transition-colors border border-indigo-200 dark:border-indigo-800"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-              <span>เติมข้อมูลตัวอย่างฟอร์ม ESAP</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={completeRegistrationAndGoToDashboard}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 rounded-xl shadow-xs transition-all"
-            >
-              <Zap className="w-3.5 h-3.5" />
-              <span>สมัครแล้วไปหน้าจัดการบัญชีทันที ➔</span>
-            </button>
-          </div>
-        </div>
-
+      {/* 3-Step Flow Diagram */}
+      <div className="bg-white dark:bg-slate-900 rounded-3xl p-4 sm:p-5 border border-slate-200 dark:border-slate-800 shadow-md mb-6">
         {/* 3 Nodes Flow Diagram */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div
