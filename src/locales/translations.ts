@@ -85,15 +85,15 @@ export const translations = {
 
     // Step 3 fields
     caDocsTitle: 'อัปโหลดเอกสารที่จำเป็นสำหรับการใช้งาน CA (Certificate Authority)',
-    caDocsSubtitle: 'รองรับไฟล์ PDF, JPG, PNG ขนาดไม่เกิน 10MB ต่อไฟล์ (กรุณาลงลายมือชื่อรับรองสำเนาถูกต้อง)',
+    caDocsSubtitle: 'รองรับไฟล์ PDF, JPG, PNG, P12, PFX ขนาดไม่เกิน 10MB ต่อไฟล์ (กรุณาลงลายมือชื่อรับรองสำเนาถูกต้อง)',
     docPp20: '1. สำเนา ภ.พ.20 (ภพ.20)',
     docPp20Desc: 'เอกสารแสดงการจดทะเบียนภาษีมูลค่าเพิ่ม',
     docCompanyCert: '2. หนังสือรับรองนิติบุคคล (DBD)',
     docCompanyCertDesc: 'คัดสำเนาไม่เกิน 6 เดือน พร้อมวัตถุประสงค์',
     docDirectorId: '3. สำเนาบัตรประชาชนกรรมการผู้มีอำนาจ',
     docDirectorIdDesc: 'พร้อมลงลายมือชื่อรับรองสำเนาถูกต้อง',
-    docCaRequest: '4. เอกสารคำขอใช้งาน Digital Certificate (CA)',
-    docCaRequestDesc: 'ใบสมัคร CA หรือหนังสือมอบอำนาจทำธุรกรรมทางอิเล็กทรอนิกส์',
+    docCaRequest: '4. เอกสารคำขอใช้งาน Digital Certificate / ใบสมัคร CA (ไฟล์ .p12)',
+    docCaRequestDesc: 'ใบสมัคร CA หรือไฟล์ใบรับรอง .p12 / PFX และหนังสือมอบอำนาจทำธุรกรรม',
     uploadBtn: 'เลือกไฟล์เอกสาร',
     useSampleDocs: 'ใช้ไฟล์ตัวอย่างสำหรับการทดสอบ (Auto Attach)',
 
@@ -243,15 +243,15 @@ export const translations = {
 
     // Step 3 fields
     caDocsTitle: 'Upload Documents required for CA (Certificate Authority)',
-    caDocsSubtitle: 'Supports PDF, JPG, PNG up to 10MB per file (certified true copy signed)',
+    caDocsSubtitle: 'Supports PDF, JPG, PNG, P12, PFX up to 10MB per file (certified true copy signed)',
     docPp20: '1. Copy of P.P.20 (ภ.พ.20 VAT Registration)',
     docPp20Desc: 'VAT Registration Certificate',
     docCompanyCert: '2. DBD Company Affidavit / Certificate',
     docCompanyCertDesc: 'Issued within past 6 months',
     docDirectorId: '3. Authorized Director National ID Card',
     docDirectorIdDesc: 'Signed certified true copy',
-    docCaRequest: '4. Digital Certificate (CA) Application Form',
-    docCaRequestDesc: 'CA registration form or electronic power of attorney',
+    docCaRequest: '4. Digital Certificate (CA) Application / .p12 Certificate File',
+    docCaRequestDesc: 'CA registration form, .p12 / PFX certificate file, or electronic power of attorney',
     uploadBtn: 'Choose File',
     useSampleDocs: 'Use Sample Documents (Auto Attach)',
 

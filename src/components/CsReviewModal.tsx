@@ -11,6 +11,7 @@ import {
   ArrowRight,
   Filter,
   Check,
+  KeyRound,
 } from 'lucide-react';
 import { Language, RegistrationApplication } from '../types/auth';
 import { translations } from '../locales/translations';
@@ -269,6 +270,18 @@ export const CsReviewModal: React.FC<CsReviewModalProps> = ({
                       </div>
                     ))}
                   </div>
+
+                  {selectedApp.caPassword && (
+                    <div className="mt-2.5 p-2.5 rounded-xl bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-900/60 flex items-center justify-between text-xs">
+                      <span className="text-slate-700 dark:text-slate-300 flex items-center gap-1.5 font-medium">
+                        <KeyRound className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
+                        <span>รหัสผ่าน CA (ไฟล์ .p12):</span>
+                      </span>
+                      <span className="font-mono font-semibold text-slate-900 dark:text-white bg-white dark:bg-slate-800 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700">
+                        {selectedApp.caPassword}
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 {/* CS Decision & Notes Form */}

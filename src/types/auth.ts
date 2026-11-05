@@ -25,6 +25,7 @@ export interface User {
   businessType?: string;
   juristicNumber?: string;
   paperlessType?: string;
+  caPassword?: string;
 }
 
 export interface Session {
@@ -133,6 +134,7 @@ export interface RegistrationApplication {
 
   // Step 3: เอกสารสำหรับ CA
   documents: CaDocument[];
+  caPassword?: string;
 
   // Step 4: ประมวลผลและ CS Review
   status: ApplicationStatus;

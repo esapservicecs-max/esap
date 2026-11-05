@@ -82,6 +82,7 @@ export const MemberDashboard: React.FC<MemberDashboardProps> = ({
   const [bio, setBio] = useState(user.bio || '');
   const [avatar, setAvatar] = useState(user.avatar);
   const [profileSuccessMsg, setProfileSuccessMsg] = useState('');
+  const [showCaPasswordInDashboard, setShowCaPasswordInDashboard] = useState(false);
 
   // Security state
   const [twoFactor, setTwoFactor] = useState(user.twoFactorEnabled);
@@ -1049,6 +1050,37 @@ export const MemberDashboard: React.FC<MemberDashboardProps> = ({
                     </div>
                   );
                 })}
+              </div>
+
+              {/* รหัสผ่าน CA (ไฟล์ .p12) */}
+              <div className="mt-3.5 p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-1.5">
+                  <div className="flex items-center gap-2">
+                    <KeyRound className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                    <span className="font-semibold text-xs text-slate-800 dark:text-slate-200">
+                      {language === 'th' ? 'รหัสผ่าน CA (Password CA - ไฟล์ .p12 / PFX)' : 'CA Password (.p12 / PFX File)'}
+                    </span>
+                  </div>
+                  {(user.caPassword || userApp?.caPassword) && (
+                    <button
+                      type="button"
+                      onClick={() => setShowCaPasswordInDashboard(!showCaPasswordInDashboard)}
+                      className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1 font-medium self-start sm:self-auto cursor-pointer"
+                    >
+                      {showCaPasswordInDashboard ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                      <span>{showCaPasswordInDashboard ? (language === 'th' ? 'ซ่อนรหัสผ่าน' : 'Hide') : (language === 'th' ? 'แสดงรหัสผ่าน' : 'Show')}</span>
+                    </button>
+                  )}
+                </div>
+                <div className="text-xs font-mono">
+                  {user.caPassword || userApp?.caPassword ? (
+                    <span className="font-semibold text-slate-900 dark:text-white bg-white dark:bg-slate-900 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 inline-block">
+                      {showCaPasswordInDashboard ? (user.caPassword || userApp?.caPassword) : '••••••••••••'}
+                    </span>
+                  ) : (
+                    <span className="text-slate-400 dark:text-slate-500 font-sans">- (ไม่ได้ระบุรหัสผ่านไฟล์ CA)</span>
+                  )}
+                </div>
               </div>
             </div>
           </div>
