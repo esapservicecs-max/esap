@@ -586,12 +586,29 @@ export const MemberDashboard: React.FC<MemberDashboardProps> = ({
                     </div>
 
                     <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
-                      <span className="text-slate-500 dark:text-slate-400 text-xs block mb-0.5">
+                      <span className="text-slate-500 dark:text-slate-400 text-xs block mb-1">
                         {language === 'th' ? 'หมวดการใช้งาน' : 'Service Category'}
                       </span>
-                      <span className="font-semibold text-slate-900 dark:text-white text-xs truncate block">
-                        {user.nswCategory || userApp?.nswCategory || '-'}
-                      </span>
+                      <div className="font-semibold text-slate-900 dark:text-white text-xs leading-relaxed">
+                        {user.nswCategory || userApp?.nswCategory ? (
+                          <div className="flex flex-wrap gap-1 mt-0.5">
+                            {(user.nswCategory || userApp?.nswCategory || '')
+                              .split(',')
+                              .map((c) => c.trim())
+                              .filter(Boolean)
+                              .map((cat, i) => (
+                                <span
+                                  key={i}
+                                  className="inline-flex items-center px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800 text-[11px] font-medium"
+                                >
+                                  {cat}
+                                </span>
+                              ))}
+                          </div>
+                        ) : (
+                          <span className="text-slate-400 dark:text-slate-500 font-normal">-</span>
+                        )}
+                      </div>
                     </div>
 
                     <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
