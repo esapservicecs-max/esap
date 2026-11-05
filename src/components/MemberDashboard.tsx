@@ -613,12 +613,33 @@ export const MemberDashboard: React.FC<MemberDashboardProps> = ({
                     </div>
 
                     <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
-                      <span className="text-slate-500 dark:text-slate-400 text-xs block mb-0.5">
-                        {language === 'th' ? 'รหัสโปรไฟล์ NSW' : 'NSW Profile Code'}
+                      <span className="text-slate-500 dark:text-slate-400 text-xs block mb-1">
+                        {language === 'th' ? 'รหัสโปรไฟล์ NSW (โปร & เทส)' : 'NSW Profile Codes (Prod & Test)'}
                       </span>
-                      <span className="font-semibold text-emerald-600 dark:text-emerald-400 text-xs font-mono">
-                        {user.nswProfile || userApp?.nswProfile || '-'}
-                      </span>
+                      {((user.nswProfiles && user.nswProfiles.length > 0) || (userApp?.nswProfiles && userApp.nswProfiles.length > 0)) ? (
+                        <div className="flex flex-col gap-1.5 mt-0.5 font-mono text-xs">
+                          {(user.nswProfiles || userApp?.nswProfiles || []).map((p, idx) => (
+                            <div key={idx} className="flex items-center gap-1.5 flex-wrap">
+                              <span
+                                className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                                  p.type === 'production'
+                                    ? 'bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800'
+                                    : 'bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800'
+                                }`}
+                              >
+                                {p.type === 'production' ? 'โปร (Prod)' : 'เทส (Test)'}
+                              </span>
+                              <span className="font-semibold text-slate-900 dark:text-white">
+                                {p.code}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="font-semibold text-emerald-600 dark:text-emerald-400 text-xs font-mono">
+                          {user.nswProfile || userApp?.nswProfile || '-'}
+                        </span>
+                      )}
                     </div>
                   </div>
 

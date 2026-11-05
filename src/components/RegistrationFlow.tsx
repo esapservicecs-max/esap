@@ -23,8 +23,9 @@ import {
   User as UserIcon,
   KeyRound,
   Lock,
+  Plus,
 } from 'lucide-react';
-import { Language, RegistrationApplication, CaDocument, User } from '../types/auth';
+import { Language, RegistrationApplication, CaDocument, User, NswProfileItem } from '../types/auth';
 import { translations } from '../locales/translations';
 import {
   checkPasswordStrength,
@@ -64,7 +65,48 @@ export const RegistrationFlow: React.FC<RegistrationFlowProps> = ({
     if (!initialApplication?.nswCategory) return [];
     return initialApplication.nswCategory.split(',').map((s) => s.trim()).filter(Boolean);
   });
-  const [nswProfile, setNswProfile] = useState(initialApplication?.nswProfile || '');
+  // NSW Profiles (รองรับทั้ง โปร Production และ เทส Test พร้อมปุ่มเพิ่มรายการ)
+  const [nswProfiles, setNswProfiles] = useState<NswProfileItem[]>(() => {
+    if (initialApplication?.nswProfiles && initialApplication.nswProfiles.length > 0) {
+      return initialApplication.nswProfiles;
+    }
+    const initialList: NswProfileItem[] = [];
+    if (initialApplication?.nswProfileProd) {
+      initialList.push({ id: 'p_prod', type: 'production', code: initialApplication.nswProfileProd });
+    }
+    if (initialApplication?.nswProfileTest) {
+      initialList.push({ id: 'p_test', type: 'test', code: initialApplication.nswProfileTest });
+    }
+    if (initialList.length > 0) return initialList;
+    if (initialApplication?.nswProfile) {
+      return [{ id: 'p_1', type: 'production', code: initialApplication.nswProfile }];
+    }
+    return [
+      { id: 'p_prod', type: 'production', code: '' },
+      { id: 'p_test', type: 'test', code: '' },
+    ];
+  });
+
+  const handleAddNswProfile = (type: 'production' | 'test') => {
+    setNswProfiles((prev) => [
+      ...prev,
+      {
+        id: `np_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+        type,
+        code: '',
+      },
+    ]);
+  };
+
+  const handleUpdateNswProfile = (id: string, updates: Partial<NswProfileItem>) => {
+    setNswProfiles((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, ...updates } : item))
+    );
+  };
+
+  const handleRemoveNswProfile = (id: string) => {
+    setNswProfiles((prev) => prev.filter((item) => item.id !== id));
+  };
 
   const toggleNswCategory = (category: string) => {
     setSelectedNswCategories((prev) =>
@@ -209,7 +251,10 @@ export const RegistrationFlow: React.FC<RegistrationFlowProps> = ({
       'NSW Gateway (ระบบเชื่อมโยงข้อมูลศุลกากร)',
       'นำเข้า-ส่งออกทั่วไป (Import / Export Customs Clearance)',
     ]);
-    setNswProfile(`NSW-TH-2024-${randomSuffix}99`);
+    setNswProfiles([
+      { id: 'p_prod', type: 'production', code: `NSW-PROD-2024-${randomSuffix}99` },
+      { id: 'p_test', type: 'test', code: `NSW-TEST-2024-${randomSuffix}11` },
+    ]);
 
     // ESAP Form Data
     setPaperlessType('Exporter/Importer');
@@ -347,7 +392,13 @@ export const RegistrationFlow: React.FC<RegistrationFlowProps> = ({
     const finalEmail = email.trim();
     const finalPhone = phone.trim();
     const finalNswCategory = selectedNswCategories.join(', ');
-    const finalNswProfile = nswProfile.trim();
+    const validProfiles = nswProfiles.filter((p) => p.code.trim());
+    const prodProfile = validProfiles.find((p) => p.type === 'production')?.code.trim() || '';
+    const testProfile = validProfiles.find((p) => p.type === 'test')?.code.trim() || '';
+    const finalNswProfile =
+      validProfiles.length > 0
+        ? validProfiles.map((p) => `${p.type === 'production' ? 'โปร' : 'เทส'}: ${p.code.trim()}`).join(' | ')
+        : '';
     const finalCompanyName = companyNameTh.trim();
     const finalCompanyNameEn = companyNameEn.trim();
     const finalTaxId = taxId.trim().replace(/\D/g, '');
@@ -387,6 +438,9 @@ export const RegistrationFlow: React.FC<RegistrationFlowProps> = ({
       phone: finalPhone,
       nswCategory: finalNswCategory,
       nswProfile: finalNswProfile,
+      nswProfileProd: prodProfile,
+      nswProfileTest: testProfile,
+      nswProfiles: validProfiles,
       paperlessType,
       refIdTest: refIdTest.trim(),
       refIdProduction: refIdProduction.trim(),
@@ -472,6 +526,9 @@ export const RegistrationFlow: React.FC<RegistrationFlowProps> = ({
       companyNameEn: finalCompanyNameEn,
       taxId: finalTaxId,
       nswProfile: finalNswProfile,
+      nswProfileProd: prodProfile,
+      nswProfileTest: testProfile,
+      nswProfiles: validProfiles,
       nswCategory: finalNswCategory,
       applicationId: application.id,
       businessType: finalBusinessType,
@@ -784,26 +841,124 @@ export const RegistrationFlow: React.FC<RegistrationFlowProps> = ({
                 </div>
               </div>
 
-              <div>
-                <div className="flex items-center justify-between mb-1">
+              {/* NSW Profiles: โปร (Production) & เทส (Test) พร้อมปุ่มเพิ่ม */}
+              <div className="space-y-2.5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
                   <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                    {t.nswProfile}
+                    {t.nswProfile}{' '}
+                    <span className="font-normal text-slate-400 dark:text-slate-500">
+                      (มีทั้งโปร Production และ เทส Test - กดปุ่มเพิ่มได้)
+                    </span>
                   </label>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const randomNum = Math.floor(100 + Math.random() * 900);
+                        setNswProfiles([
+                          { id: 'p_prod', type: 'production', code: `NSW-PROD-2024-${randomNum}99` },
+                          { id: 'p_test', type: 'test', code: `NSW-TEST-2024-${randomNum}11` },
+                        ]);
+                      }}
+                      className="text-[11px] text-emerald-700 dark:text-emerald-400 font-medium hover:underline flex items-center gap-1 cursor-pointer"
+                    >
+                      <Sparkles className="w-3 h-3 text-amber-500" />
+                      <span>ใส่ตัวอย่างโปรไฟล์ (โปร & เทส)</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Profiles List */}
+                <div className="space-y-2">
+                  {nswProfiles.map((item) => {
+                    const isProd = item.type === 'production';
+                    return (
+                      <div
+                        key={item.id}
+                        className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 p-2 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700 transition-all"
+                      >
+                        {/* Selector for โปร (Production) vs เทส (Test) */}
+                        <div className="flex items-center p-1 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateNswProfile(item.id, { type: 'production' })}
+                            className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all flex items-center gap-1.5 cursor-pointer ${
+                              isProd
+                                ? 'bg-emerald-600 text-white shadow-xs'
+                                : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                            }`}
+                          >
+                            <span className="w-2 h-2 rounded-full bg-emerald-300"></span>
+                            <span>โปร (Production)</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateNswProfile(item.id, { type: 'test' })}
+                            className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all flex items-center gap-1.5 cursor-pointer ${
+                              !isProd
+                                ? 'bg-amber-500 text-white shadow-xs'
+                                : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                            }`}
+                          >
+                            <span className="w-2 h-2 rounded-full bg-amber-200"></span>
+                            <span>เทส (Test)</span>
+                          </button>
+                        </div>
+
+                        {/* Input Code */}
+                        <div className="relative flex-1">
+                          <input
+                            type="text"
+                            value={item.code}
+                            onChange={(e) =>
+                              handleUpdateNswProfile(item.id, { code: e.target.value.toUpperCase() })
+                            }
+                            placeholder={
+                              isProd
+                                ? 'เช่น NSW-PROD-2024-XXXXX หรือ รหัสระบบจริง'
+                                : 'เช่น NSW-TEST-2024-XXXXX หรือ รหัสระบบทดสอบ'
+                            }
+                            className="w-full px-3.5 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-xs sm:text-sm font-mono tracking-wide focus:ring-2 focus:ring-emerald-500 outline-none placeholder:font-sans placeholder:text-xs"
+                          />
+                        </div>
+
+                        {/* Delete Button (if more than 1) */}
+                        {nswProfiles.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveNswProfile(item.id)}
+                            className="self-end sm:self-center p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg transition-colors cursor-pointer shrink-0"
+                            title="ลบโปรไฟล์นี้"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Add Buttons (ปุ่มเพิ่มโปรและเทส) */}
+                <div className="flex items-center gap-2 pt-1 flex-wrap">
                   <button
                     type="button"
-                    onClick={() => setNswProfile('NSW-TH-2024-88319')}
-                    className="text-[11px] text-emerald-700 dark:text-emerald-400 font-medium hover:underline"
+                    onClick={() => handleAddNswProfile('production')}
+                    className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 rounded-xl border border-emerald-300 dark:border-emerald-800 transition-colors shadow-2xs cursor-pointer"
                   >
-                    ใส่ตัวอย่างโปรไฟล์ NSW
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>+ เพิ่มโปรไฟล์ โปร (Production)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleAddNswProfile('test')}
+                    className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/60 hover:bg-amber-100 dark:hover:bg-amber-900/60 rounded-xl border border-amber-300 dark:border-amber-800 transition-colors shadow-2xs cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>+ เพิ่มโปรไฟล์ เทส (Test)</span>
                   </button>
                 </div>
-                <input
-                  type="text"
-                  value={nswProfile}
-                  onChange={(e) => setNswProfile(e.target.value.toUpperCase())}
-                  placeholder={t.nswProfilePlaceholder}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-emerald-500 font-mono tracking-wide"
-                />
               </div>
             </div>
 

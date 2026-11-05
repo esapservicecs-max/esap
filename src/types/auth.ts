@@ -1,5 +1,11 @@
 export type UserRole = 'member' | 'pro' | 'admin' | 'cs_staff';
 
+export interface NswProfileItem {
+  id: string;
+  type: 'production' | 'test';
+  code: string;
+}
+
 export interface User {
   id: string;
   name: string;
@@ -20,6 +26,9 @@ export interface User {
   companyNameEn?: string;
   taxId?: string;
   nswProfile?: string;
+  nswProfileProd?: string;
+  nswProfileTest?: string;
+  nswProfiles?: NswProfileItem[];
   nswCategory?: string;
   applicationId?: string;
   businessType?: string;
@@ -69,6 +78,9 @@ export interface RegistrationApplication {
   phone: string;
   nswCategory: string;
   nswProfile: string;
+  nswProfileProd?: string;
+  nswProfileTest?: string;
+  nswProfiles?: NswProfileItem[];
 
   // Step 2: ข้อมูลตามแบบฟอร์ม ESAP (Paperless ebXML – Application Form)
   // ส่วน Ref ID Paperless Type

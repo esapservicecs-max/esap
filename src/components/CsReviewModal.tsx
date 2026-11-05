@@ -232,7 +232,27 @@ export const CsReviewModal: React.FC<CsReviewModalProps> = ({
                     <span className="text-slate-400 font-semibold block">ข้อมูลผู้สมัคร & NSW</span>
                     <div><strong>Username:</strong> {selectedApp.username}</div>
                     <div><strong>หมวด:</strong> {selectedApp.nswCategory}</div>
-                    <div><strong>NSW Profile:</strong> {selectedApp.nswProfile}</div>
+                    <div>
+                      <strong>NSW Profile:</strong>{' '}
+                      {selectedApp.nswProfiles && selectedApp.nswProfiles.length > 0 ? (
+                        <span className="inline-flex flex-wrap gap-1 align-middle">
+                          {selectedApp.nswProfiles.map((p, idx) => (
+                            <span
+                              key={idx}
+                              className={`text-[10px] px-1.5 py-0.2 rounded font-mono font-medium ${
+                                p.type === 'production'
+                                  ? 'bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300'
+                                  : 'bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300'
+                              }`}
+                            >
+                              {p.type === 'production' ? 'โปร' : 'เทส'}: {p.code}
+                            </span>
+                          ))}
+                        </span>
+                      ) : (
+                        <span>{selectedApp.nswProfile || '-'}</span>
+                      )}
+                    </div>
                     <div><strong>ผู้ติดต่อ/e-Tax:</strong> {selectedApp.eTaxEmail} ({selectedApp.phone})</div>
                   </div>
                 </div>
