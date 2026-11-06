@@ -31,8 +31,13 @@ import {
   FileCheck2,
   Check,
   Copy,
+  UserCheck,
+  Briefcase,
+  FileCode,
+  Edit3,
+  Key,
 } from 'lucide-react';
-import { User, Session, ActivityLog, Language, RegistrationApplication, CaDocument } from '../types/auth';
+import { User, Session, ActivityLog, Language, RegistrationApplication, CaDocument, NswProfileItem } from '../types/auth';
 import { translations } from '../locales/translations';
 import {
   ASSETS,
@@ -46,6 +51,7 @@ import {
   getActivityLogs,
   addActivityLog,
   getStoredApplications,
+  saveOrUpdateApplication,
 } from '../services/storage';
 
 const ESAP_PROGRAM_MAP: Record<string, { label: string; desc: string; logo: string; code: string }> = {
@@ -73,6 +79,27 @@ export const MemberDashboard: React.FC<MemberDashboardProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<'profile' | 'esap' | 'security' | 'activity'>('profile');
   const [copiedRef, setCopiedRef] = useState(false);
+  const t = translations[language];
+
+  // Security & Activity states
+  const [twoFactor, setTwoFactor] = useState(user.twoFactorEnabled);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [passwordError, setPasswordError] = useState('');
+  const [passwordSuccess, setPasswordSuccess] = useState('');
+  const [sessions, setSessions] = useState<Session[]>(getSessions());
+  const [sessionsRevokedMsg, setSessionsRevokedMsg] = useState('');
+  const [logs, setLogs] = useState<ActivityLog[]>(getActivityLogs());
+
+  const avatarPresets = [
+    ASSETS.avatarFemale,
+    ASSETS.avatarMale,
+    'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+    'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150',
+    'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150',
+  ];
 
   // Retrieve matching application for this member
   const applications = getStoredApplications();
@@ -94,65 +121,330 @@ export const MemberDashboard: React.FC<MemberDashboardProps> = ({
   const [profileSuccessMsg, setProfileSuccessMsg] = useState('');
   const [showCaPasswordInDashboard, setShowCaPasswordInDashboard] = useState(false);
 
-  // Security state
-  const [twoFactor, setTwoFactor] = useState(user.twoFactorEnabled);
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [passwordError, setPasswordError] = useState('');
-  const [passwordSuccess, setPasswordSuccess] = useState('');
+  // Extended registration fields states for editing and syncing
+  const [editCompanyTh, setEditCompanyTh] = useState(user.companyNameTh || userApp?.companyNameTh || user.companyName || '');
+  const [editCompanyEn, setEditCompanyEn] = useState(user.companyNameEn || userApp?.companyNameEn || '');
+  const [editTaxId, setEditTaxId] = useState(user.taxId || userApp?.taxId || '');
+  const [editJuristic, setEditJuristic] = useState(user.juristicNumber || userApp?.juristicNumber || '');
+  const [editBusinessType, setEditBusinessType] = useState(user.businessType || userApp?.businessType || '');
+  const [editAddress, setEditAddress] = useState(userApp?.registeredAddress || '');
+  const [editContactPrefix, setEditContactPrefix] = useState(userApp?.contactPrefix || 'นาย');
+  const [editContactFirstName, setEditContactFirstName] = useState(userApp?.contactFirstName || '');
+  const [editContactLastName, setEditContactLastName] = useState(userApp?.contactLastName || '');
+  const [editContactPosition, setEditContactPosition] = useState(userApp?.contactPosition || '');
+  const [editContactMobile, setEditContactMobile] = useState(userApp?.contactMobile || userApp?.contactPhone || user.phone || '');
+  const [editContactEmail, setEditContactEmail] = useState(userApp?.contactEmail || user.email || '');
+  const [editNswCategory, setEditNswCategory] = useState(user.nswCategory || userApp?.nswCategory || '');
+  const [editNswProfileProd, setEditNswProfileProd] = useState(user.nswProfileProd || userApp?.nswProfileProd || '');
+  const [editNswProfileTest, setEditNswProfileTest] = useState(user.nswProfileTest || userApp?.nswProfileTest || '');
+  const [editSelectedPrograms, setEditSelectedPrograms] = useState<string[]>(
+    (user.selectedPrograms && user.selectedPrograms.length > 0)
+      ? user.selectedPrograms
+      : (userApp?.selectedPrograms || [])
+  );
+  const [editCaPassword, setEditCaPassword] = useState(user.caPassword || userApp?.caPassword || '');
 
-  // Sessions state
-  const [sessions, setSessions] = useState<Session[]>(getSessions());
-  const [sessionsRevokedMsg, setSessionsRevokedMsg] = useState('');
+  // Quick 1-click sample data populate in dashboard
+  const handleFillSampleDataInDashboard = () => {
+    const randomSuffix = Math.floor(100 + Math.random() * 900);
+    const sampleCompanyTh = `บริษัท ไทย ลอจิสติกส์ ซัพพลายเชน ${randomSuffix} จำกัด`;
+    const sampleCompanyEn = `Thai Logistics Supply Chain ${randomSuffix} Co., Ltd.`;
+    const sampleTaxId = `01055580${randomSuffix}88`;
+    const sampleJuristic = `01055580${randomSuffix}88`;
+    const sampleBusinessType = 'บริการนำเข้าและส่งออกสินค้าอุตสาหกรรม และโลจิสติกส์';
+    const sampleAddress = 'เลขที่ 888/45 อาคารบางกอกบิสซิเนสเซ็นเตอร์ ชั้น 12 ถนนสุขุมวิท 63 แขวงคลองตันเหนือ เขตวัฒนา กรุงเทพมหานคร 10110';
+    const sampleCategory = 'NSW Gateway (ระบบเชื่อมโยงข้อมูลศุลกากร), นำเข้า-ส่งออกทั่วไป (Import / Export Customs Clearance)';
+    const sampleProfiles: NswProfileItem[] = [
+      { id: 'p_prod', type: 'production', code: `NSW-PROD-2024-${randomSuffix}99` },
+      { id: 'p_test', type: 'test', code: `NSW-TEST-2024-${randomSuffix}11` },
+    ];
+    const sampleNswProfile = `โปร: NSW-PROD-2024-${randomSuffix}99 | เทส: NSW-TEST-2024-${randomSuffix}11`;
+    const samplePrograms = ['import', 'export', 'goods'];
 
-  // Activity logs
-  const [logs, setLogs] = useState<ActivityLog[]>(getActivityLogs());
+    setEditCompanyTh(sampleCompanyTh);
+    setEditCompanyEn(sampleCompanyEn);
+    setEditTaxId(sampleTaxId);
+    setEditJuristic(sampleJuristic);
+    setEditBusinessType(sampleBusinessType);
+    setEditAddress(sampleAddress);
+    setEditContactPrefix('นาย');
+    setEditContactFirstName('ชลธาร');
+    setEditContactLastName('สมบูรณ์สุข');
+    setEditContactPosition('ผู้จัดการแผนกพิธีการศุลกากร');
+    setEditContactMobile('089-555-8899');
+    setEditContactEmail(`choltarn${randomSuffix}@esapservice.co.th`);
+    setEditNswCategory(sampleCategory);
+    setEditNswProfileProd(`NSW-PROD-2024-${randomSuffix}99`);
+    setEditNswProfileTest(`NSW-TEST-2024-${randomSuffix}11`);
+    setEditSelectedPrograms(samplePrograms);
+    setEditCaPassword('PasswordCA123!');
 
-  const t = translations[language];
+    const updatedUser: User = {
+      ...user,
+      name: sampleCompanyTh,
+      companyName: sampleCompanyTh,
+      companyNameTh: sampleCompanyTh,
+      companyNameEn: sampleCompanyEn,
+      taxId: sampleTaxId,
+      juristicNumber: sampleJuristic,
+      businessType: sampleBusinessType,
+      paperlessType: 'Exporter/Importer',
+      nswCategory: sampleCategory,
+      nswProfile: sampleNswProfile,
+      nswProfileProd: `NSW-PROD-2024-${randomSuffix}99`,
+      nswProfileTest: `NSW-TEST-2024-${randomSuffix}11`,
+      nswProfiles: sampleProfiles,
+      selectedPrograms: samplePrograms,
+      caPassword: 'PasswordCA123!',
+      phone: user.phone && user.phone !== '-' ? user.phone : '089-555-8899',
+      email: user.email && user.email !== '-' ? user.email : `contact${randomSuffix}@esapservice.co.th`,
+    };
 
-  // Avatar presets
-  const avatarPresets = [
-    ASSETS.avatarFemale,
-    ASSETS.avatarMale,
-    'https://api.dicebear.com/7.x/avataaars/svg?seed=Pim',
-    'https://api.dicebear.com/7.x/avataaars/svg?seed=Somchai',
-    'https://api.dicebear.com/7.x/avataaars/svg?seed=Kittisak',
-    'https://api.dicebear.com/7.x/bottts/svg?seed=CyberBot',
-  ];
+    const newApp: RegistrationApplication = userApp
+      ? {
+          ...userApp,
+          companyName: sampleCompanyTh,
+          companyNameTh: sampleCompanyTh,
+          companyNameEn: sampleCompanyEn,
+          taxId: sampleTaxId,
+          juristicNumber: sampleJuristic,
+          businessType: sampleBusinessType,
+          registeredAddress: sampleAddress,
+          contactPrefix: 'นาย',
+          contactFirstName: 'ชลธาร',
+          contactLastName: 'สมบูรณ์สุข',
+          contactPosition: 'ผู้จัดการแผนกพิธีการศุลกากร',
+          contactPhone: '02-714-8899',
+          contactMobile: '089-555-8899',
+          contactEmail: updatedUser.email,
+          nswCategory: sampleCategory,
+          nswProfiles: sampleProfiles,
+          nswProfile: sampleNswProfile,
+          nswProfileProd: `NSW-PROD-2024-${randomSuffix}99`,
+          nswProfileTest: `NSW-TEST-2024-${randomSuffix}11`,
+          selectedPrograms: samplePrograms,
+          caPassword: 'PasswordCA123!',
+          status: 'approved',
+          updatedAt: new Date().toISOString(),
+        }
+      : {
+          id: user.applicationId || `APP-ESAP-${randomSuffix}00`,
+          username: user.username,
+          email: updatedUser.email,
+          phone: updatedUser.phone,
+          nswCategory: sampleCategory,
+          nswProfile: sampleNswProfile,
+          nswProfileProd: `NSW-PROD-2024-${randomSuffix}99`,
+          nswProfileTest: `NSW-TEST-2024-${randomSuffix}11`,
+          nswProfiles: sampleProfiles,
+          paperlessType: 'Exporter/Importer',
+          refIdTest: `TEST-EXP-${randomSuffix}`,
+          refIdProduction: `PROD-EXP-${randomSuffix}`,
+          companyName: sampleCompanyTh,
+          companyNameTh: sampleCompanyTh,
+          companyNameEn: sampleCompanyEn,
+          businessType: sampleBusinessType,
+          juristicNumber: sampleJuristic,
+          taxId: sampleTaxId,
+          branchType: 'headquarters',
+          branchNumber: '00000',
+          billingHouseNo: '888/45',
+          billingMoo: '3',
+          billingBuilding: 'อาคารบางกอกบิสซิเนสเซ็นเตอร์ ชั้น 12',
+          billingSoi: 'สุขุมวิท 63',
+          billingRoad: 'ถนนสุขุมวิท',
+          billingSubDistrict: 'คลองตันเหนือ',
+          billingDistrict: 'วัฒนา',
+          billingProvince: 'กรุงเทพมหานคร',
+          billingPostalCode: '10110',
+          billingPhone: '02-714-8899',
+          billingFax: '02-714-8898',
+          billingEmail: updatedUser.email,
+          installSameAsBilling: true,
+          contactPrefix: 'นาย',
+          contactFirstName: 'ชลธาร',
+          contactLastName: 'สมบูรณ์สุข',
+          contactPosition: 'ผู้จัดการแผนกพิธีการศุลกากร',
+          contactPhone: '02-714-8899',
+          contactMobile: '089-555-8899',
+          contactEmail: updatedUser.email,
+          selectedPrograms: samplePrograms,
+          registeredAddress: sampleAddress,
+          documents: [
+            { id: 'doc_1', name: 'สำเนา ภ.พ.20 (ภพ.20)', type: 'pp20', fileName: 'PP20_Verified.pdf', fileSize: '1.2 MB', uploadedAt: '10:30', status: 'valid' },
+            { id: 'doc_poa', name: 'หนังสือมอบอำนาจพร้อมติดอากรสแตมป์ (ถ้ามี)', type: 'power_of_attorney', fileName: 'Power_Of_Attorney_Stamped.pdf', fileSize: '1.4 MB', uploadedAt: '10:31', status: 'valid' },
+            { id: 'doc_attorney_id', name: 'สำเนาบัตรผู้รับมอบอำนาจ', type: 'attorney_id', fileName: 'Attorney_ID_Card.jpg', fileSize: '650 KB', uploadedAt: '10:32', status: 'valid' },
+            { id: 'doc_2', name: 'หนังสือรับรองนิติบุคคล (DBD คัดสำเนาไม่เกิน 6 เดือน)', type: 'company_cert', fileName: 'DBD_Certificate_Latest.pdf', fileSize: '2.1 MB', uploadedAt: '10:33', status: 'valid' },
+            { id: 'doc_3', name: 'สำเนาบัตรประชาชนกรรมการผู้มีอำนาจ (พร้อมลงนามรับรอง)', type: 'director_id', fileName: 'Director_ID_Signed.pdf', fileSize: '850 KB', uploadedAt: '10:34', status: 'valid' },
+            { id: 'doc_4', name: 'เอกสารคำขอใช้งาน Digital Certificate / ใบสมัคร CA (ไฟล์ .p12)', type: 'ca_request', fileName: 'digital_cert_esap.p12', fileSize: '45 KB', uploadedAt: '10:35', status: 'valid' },
+          ],
+          caPassword: 'PasswordCA123!',
+          status: 'approved',
+          submittedAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+
+    saveOrUpdateApplication(newApp);
+    const allUsers = getStoredUsers().map((u) => (u.id === user.id ? updatedUser : u));
+    saveUsers(allUsers);
+    setCurrentUser(updatedUser);
+    onUpdateUser(updatedUser);
+    addActivityLog('เติมข้อมูลตัวอย่างฟอร์ม ESAP สำเร็จ ข้อมูลสัมพันธ์ครบถ้วน', 'success');
+    setProfileSuccessMsg('เติมข้อมูลตัวอย่างสถานประกอบการและแบบฟอร์ม ESAP เรียบร้อยแล้ว!');
+    setTimeout(() => setProfileSuccessMsg(''), 4000);
+  };
+
+  const handleStartEditing = () => {
+    setName(user.name);
+    setPhone(user.phone);
+    setBio(user.bio || '');
+    setAvatar(user.avatar);
+    setEditCompanyTh(user.companyNameTh || userApp?.companyNameTh || user.companyName || '');
+    setEditCompanyEn(user.companyNameEn || userApp?.companyNameEn || '');
+    setEditTaxId(user.taxId || userApp?.taxId || '');
+    setEditJuristic(user.juristicNumber || userApp?.juristicNumber || '');
+    setEditBusinessType(user.businessType || userApp?.businessType || '');
+    setEditAddress(userApp?.registeredAddress || '');
+    setEditContactPrefix(userApp?.contactPrefix || 'นาย');
+    setEditContactFirstName(userApp?.contactFirstName || '');
+    setEditContactLastName(userApp?.contactLastName || '');
+    setEditContactPosition(userApp?.contactPosition || '');
+    setEditContactMobile(userApp?.contactMobile || userApp?.contactPhone || user.phone || '');
+    setEditContactEmail(userApp?.contactEmail || user.email || '');
+    setEditNswCategory(user.nswCategory || userApp?.nswCategory || '');
+    setEditNswProfileProd(user.nswProfileProd || userApp?.nswProfileProd || '');
+    setEditNswProfileTest(user.nswProfileTest || userApp?.nswProfileTest || '');
+    setEditSelectedPrograms(
+      (user.selectedPrograms && user.selectedPrograms.length > 0)
+        ? user.selectedPrograms
+        : (userApp?.selectedPrograms || [])
+    );
+    setEditCaPassword(user.caPassword || userApp?.caPassword || '');
+    setIsEditing(true);
+  };
 
   const handleSaveProfile = (e: React.FormEvent) => {
     e.preventDefault();
-    const users = getStoredUsers();
-    const updatedUsers = users.map((u) => {
-      if (u.id === user.id) {
-        return {
-          ...u,
-          name: name.trim(),
-          phone: phone.trim(),
-          bio: bio.trim(),
-          avatar,
-        };
-      }
-      return u;
-    });
+    const cleanTax = editTaxId.replace(/\D/g, '');
+    const cleanContact = `${editContactPrefix ? editContactPrefix + ' ' : ''}${editContactFirstName.trim()} ${editContactLastName.trim()}`.trim();
+    const finalDisplayName = editCompanyTh.trim() || cleanContact || name.trim() || user.username;
 
-    saveUsers(updatedUsers);
-    const updatedUser = {
+    const validProfiles: NswProfileItem[] = [
+      editNswProfileProd.trim() ? { id: 'p_prod', type: 'production' as const, code: editNswProfileProd.trim() } : null,
+      editNswProfileTest.trim() ? { id: 'p_test', type: 'test' as const, code: editNswProfileTest.trim() } : null,
+    ].filter(Boolean) as NswProfileItem[];
+
+    const finalNswProfile = validProfiles.map((p) => `${p.type === 'production' ? 'โปร' : 'เทส'}: ${p.code}`).join(' | ');
+
+    const updatedUser: User = {
       ...user,
-      name: name.trim(),
-      phone: phone.trim(),
+      name: finalDisplayName,
+      phone: editContactMobile.trim() || phone.trim(),
+      email: editContactEmail.trim() || user.email,
       bio: bio.trim(),
       avatar,
+      companyName: editCompanyTh.trim(),
+      companyNameTh: editCompanyTh.trim(),
+      companyNameEn: editCompanyEn.trim(),
+      taxId: cleanTax,
+      juristicNumber: editJuristic.trim() || cleanTax,
+      businessType: editBusinessType.trim(),
+      nswCategory: editNswCategory.trim(),
+      nswProfile: finalNswProfile,
+      nswProfileProd: editNswProfileProd.trim(),
+      nswProfileTest: editNswProfileTest.trim(),
+      nswProfiles: validProfiles,
+      selectedPrograms: editSelectedPrograms,
+      caPassword: editCaPassword.trim(),
     };
+
+    // Keep matching Application in sync
+    const updatedApp: RegistrationApplication = userApp
+      ? {
+          ...userApp,
+          companyName: editCompanyTh.trim(),
+          companyNameTh: editCompanyTh.trim(),
+          companyNameEn: editCompanyEn.trim(),
+          taxId: cleanTax,
+          juristicNumber: editJuristic.trim() || cleanTax,
+          businessType: editBusinessType.trim(),
+          registeredAddress: editAddress.trim(),
+          contactPrefix: editContactPrefix,
+          contactFirstName: editContactFirstName.trim(),
+          contactLastName: editContactLastName.trim(),
+          contactPosition: editContactPosition.trim(),
+          contactMobile: editContactMobile.trim(),
+          contactEmail: editContactEmail.trim(),
+          nswCategory: editNswCategory.trim(),
+          nswProfiles: validProfiles,
+          nswProfile: finalNswProfile,
+          nswProfileProd: editNswProfileProd.trim(),
+          nswProfileTest: editNswProfileTest.trim(),
+          selectedPrograms: editSelectedPrograms,
+          caPassword: editCaPassword.trim(),
+          updatedAt: new Date().toISOString(),
+        }
+      : {
+          id: user.applicationId || `APP-ESAP-${Math.floor(10000 + Math.random() * 90000)}`,
+          username: user.username,
+          email: updatedUser.email,
+          phone: updatedUser.phone,
+          nswCategory: editNswCategory.trim(),
+          nswProfile: finalNswProfile,
+          nswProfileProd: editNswProfileProd.trim(),
+          nswProfileTest: editNswProfileTest.trim(),
+          nswProfiles: validProfiles,
+          paperlessType: 'Exporter/Importer',
+          refIdTest: `TEST-EXP-${Date.now().toString().slice(-4)}`,
+          refIdProduction: `PROD-EXP-${Date.now().toString().slice(-4)}`,
+          companyName: editCompanyTh.trim(),
+          companyNameTh: editCompanyTh.trim(),
+          companyNameEn: editCompanyEn.trim(),
+          businessType: editBusinessType.trim(),
+          juristicNumber: editJuristic.trim() || cleanTax,
+          taxId: cleanTax,
+          branchType: 'headquarters',
+          branchNumber: '00000',
+          billingHouseNo: editAddress.trim() || '88/1',
+          billingMoo: '-',
+          billingBuilding: '',
+          billingSoi: '',
+          billingRoad: '',
+          billingSubDistrict: '',
+          billingDistrict: '',
+          billingProvince: 'กรุงเทพมหานคร',
+          billingPostalCode: '10110',
+          billingPhone: editContactMobile.trim(),
+          billingFax: '',
+          billingEmail: updatedUser.email,
+          installSameAsBilling: true,
+          contactPrefix: editContactPrefix,
+          contactFirstName: editContactFirstName.trim(),
+          contactLastName: editContactLastName.trim(),
+          contactPosition: editContactPosition.trim(),
+          contactPhone: editContactMobile.trim(),
+          contactMobile: editContactMobile.trim(),
+          contactEmail: editContactEmail.trim(),
+          selectedPrograms: editSelectedPrograms,
+          registeredAddress: editAddress.trim(),
+          documents: [],
+          caPassword: editCaPassword.trim(),
+          status: 'approved',
+          submittedAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+
+    saveOrUpdateApplication(updatedApp);
+    const users = getStoredUsers();
+    const updatedUsers = users.map((u) => (u.id === user.id ? updatedUser : u));
+    saveUsers(updatedUsers);
     setCurrentUser(updatedUser);
     onUpdateUser(updatedUser);
     setIsEditing(false);
     setProfileSuccessMsg(
-      language === 'th' ? 'บันทึกการแก้ไขโปรไฟล์เรียบร้อยแล้ว' : 'Profile updated successfully'
+      language === 'th' ? 'บันทึกข้อมูลและอัปเดตแบบฟอร์ม ESAP เรียบร้อยแล้ว' : 'Profile & ESAP form updated successfully'
     );
-    addActivityLog(`แก้ไขข้อมูลโปรไฟล์ (${updatedUser.name})`, 'success');
+    addActivityLog(`แก้ไขข้อมูลโปรไฟล์ & ใบสมัคร (${updatedUser.name})`, 'success');
     setLogs(getActivityLogs());
 
     setTimeout(() => setProfileSuccessMsg(''), 4000);
@@ -380,312 +672,866 @@ export const MemberDashboard: React.FC<MemberDashboardProps> = ({
       {activeTab === 'profile' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main Profile Info & Form */}
-          <div className="lg:col-span-2 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-xs">
-            <div className="flex items-center justify-between pb-4 mb-5 border-b border-slate-100 dark:border-slate-800">
-              <h3 className="font-bold text-slate-900 dark:text-white text-base">
-                {language === 'th' ? 'ข้อมูลบัญชีผู้ใช้งาน' : 'Account Information'}
-              </h3>
-              {!isEditing ? (
-                <button
-                  type="button"
-                  onClick={() => setIsEditing(true)}
-                  className="px-3.5 py-1.5 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 rounded-lg transition-colors border border-indigo-200 dark:border-indigo-800"
-                >
-                  {t.editProfile}
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => setIsEditing(false)}
-                  className="px-3.5 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
-                >
-                  {t.cancel}
-                </button>
-              )}
-            </div>
+          <div className="lg:col-span-2 space-y-6">
+            {/* Success message banner */}
+            {profileSuccessMsg && (
+              <div className="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-xs sm:text-sm font-semibold text-emerald-800 dark:text-emerald-300 flex items-center gap-2 shadow-2xs">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <span>{profileSuccessMsg}</span>
+              </div>
+            )}
 
-            {isEditing ? (
-              <form onSubmit={handleSaveProfile} className="space-y-4">
-                {/* Choose Avatar */}
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2">
-                    {language === 'th' ? 'เลือกรูปโปรไฟล์' : 'Select Avatar'}
-                  </label>
-                  <div className="flex items-center gap-3 overflow-x-auto pb-2">
-                    {avatarPresets.map((preset, idx) => (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => setAvatar(preset)}
-                        className={`relative rounded-xl p-0.5 transition-all shrink-0 ${
-                          avatar === preset
-                            ? 'ring-2 ring-indigo-600 ring-offset-2 dark:ring-offset-slate-900 scale-105'
-                            : 'opacity-70 hover:opacity-100'
-                        }`}
-                      >
-                        <img
-                          src={preset}
-                          alt="Preset avatar"
-                          className="w-12 h-12 rounded-lg object-cover bg-slate-100 dark:bg-slate-800"
-                          referrerPolicy="no-referrer"
-                        />
-                      </button>
-                    ))}
+            {/* Incomplete / Sample Fill Reminder Banner */}
+            {(!user.companyName && !userApp?.companyName && !user.taxId) && (
+              <div className="p-4 rounded-2xl bg-amber-50/90 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div className="flex items-start gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center shrink-0 text-amber-700 dark:text-amber-300 mt-0.5">
+                    <AlertCircle className="w-5 h-5" />
                   </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                    {t.fullName}
-                  </label>
-                  <input
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    required
-                    className="w-full px-3.5 py-2 text-sm rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                    {t.phone}
-                  </label>
-                  <input
-                    type="text"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    className="w-full px-3.5 py-2 text-sm rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 font-mono"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                    {language === 'th' ? 'เกี่ยวกับฉัน (Bio)' : 'Bio'}
-                  </label>
-                  <textarea
-                    rows={3}
-                    value={bio}
-                    onChange={(e) => setBio(e.target.value)}
-                    placeholder={language === 'th' ? 'เขียนแนะนำตัวเองสั้นๆ...' : 'A brief description about yourself...'}
-                    className="w-full px-3.5 py-2 text-sm rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
-                  />
-                </div>
-
-                <div className="flex items-center gap-3 pt-2">
-                  <button
-                    type="submit"
-                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 transition-colors shadow-xs"
-                  >
-                    <Save className="w-4 h-4" />
-                    <span>{t.saveChanges}</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setIsEditing(false)}
-                    className="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                  >
-                    {t.cancel}
-                  </button>
-                </div>
-              </form>
-            ) : (
-              <div className="space-y-4 text-xs sm:text-sm">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
-                    <span className="text-slate-500 dark:text-slate-400 text-xs block mb-1">
-                      {t.fullName}
-                    </span>
-                    <span className="font-semibold text-slate-900 dark:text-white text-sm">
-                      {user.name || '-'}
-                    </span>
-                  </div>
-
-                  <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
-                    <span className="text-slate-500 dark:text-slate-400 text-xs block mb-1">
-                      {t.username}
-                    </span>
-                    <span className="font-semibold text-slate-900 dark:text-white text-sm font-mono">
-                      @{user.username}
-                    </span>
-                  </div>
-
-                  <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
-                    <span className="text-slate-500 dark:text-slate-400 text-xs block mb-1">
-                      {t.email}
-                    </span>
-                    <span className="font-semibold text-slate-900 dark:text-white text-sm">
-                      {user.email || '-'}
-                    </span>
-                  </div>
-
-                  <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
-                    <span className="text-slate-500 dark:text-slate-400 text-xs block mb-1">
-                      {t.phone}
-                    </span>
-                    <span className="font-semibold text-slate-900 dark:text-white text-sm font-mono">
-                      {user.phone || '-'}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Enterprise, Tax & NSW Details */}
-                <div className="pt-3 border-t border-slate-100 dark:border-slate-800">
-                  <div className="flex items-center justify-between mb-3">
-                    <h4 className="font-semibold text-xs text-indigo-600 dark:text-indigo-400 flex items-center gap-1.5">
-                      <Building2 className="w-3.5 h-3.5" />
-                      <span>{language === 'th' ? 'ข้อมูลสถานประกอบการและระบบเชื่อมโยง NSW & CA' : 'Enterprise & NSW Connection'}</span>
+                  <div>
+                    <h4 className="text-sm font-bold text-amber-900 dark:text-amber-200">
+                      {language === 'th' ? 'ยังไม่ได้ระบุข้อมูลสถานประกอบการและแบบฟอร์ม ESAP' : 'Incomplete Enterprise & ESAP Application Data'}
                     </h4>
-                    <span className="text-[10px] px-2 py-0.5 rounded-md font-medium bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200/60 dark:border-indigo-800/60">
-                      ESAP ebXML
-                    </span>
+                    <p className="text-xs text-amber-700 dark:text-amber-300 mt-0.5 leading-relaxed">
+                      {language === 'th'
+                        ? 'บัญชีนี้ยังไม่มีข้อมูลเชื่อมโยงกับขั้นตอนสมัครสมาชิก (ภ.พ.20, ผู้ประสานงาน, โปรแกรม ESAP และ CA) คุณสามารถกดเติมข้อมูลตัวอย่างเพื่อทดสอบระบบได้ทันที'
+                        : 'This account has no linked registration details (P.P.20, contact person, ESAP programs & CA). Click fill sample to test immediately.'}
+                    </p>
                   </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
-                      <span className="text-slate-500 dark:text-slate-400 text-xs block mb-0.5">
-                        {language === 'th' ? 'ชื่อสถานประกอบการ (ภ.พ.20 / ภาษาไทย)' : 'Company Name (P.P.20 / TH)'}
-                      </span>
-                      <span className="font-semibold text-slate-900 dark:text-white text-xs sm:text-sm">
-                        {user.companyNameTh || user.companyName || userApp?.companyNameTh || '-'}
-                      </span>
-                    </div>
-
-                    <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
-                      <span className="text-slate-500 dark:text-slate-400 text-xs block mb-0.5">
-                        {language === 'th' ? 'ชื่อสถานประกอบการ (ภาษาอังกฤษ)' : 'Company Name (EN)'}
-                      </span>
-                      <span className="font-semibold text-slate-900 dark:text-white text-xs sm:text-sm">
-                        {user.companyNameEn || userApp?.companyNameEn || '-'}
-                      </span>
-                    </div>
-
-                    <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
-                      <span className="text-slate-500 dark:text-slate-400 text-xs block mb-0.5">
-                        {language === 'th' ? 'ประเภท Paperless Type' : 'Paperless Type'}
-                      </span>
-                      <span className="font-semibold text-indigo-700 dark:text-indigo-300 text-xs">
-                        {user.paperlessType || userApp?.paperlessType || '-'}
-                      </span>
-                    </div>
-
-                    <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
-                      <span className="text-slate-500 dark:text-slate-400 text-xs block mb-0.5">
-                        {language === 'th' ? 'ทะเบียนนิติบุคคลเลขที่' : 'Juristic Registered No.'}
-                      </span>
-                      <span className="font-semibold text-slate-900 dark:text-white text-xs font-mono">
-                        {user.juristicNumber || userApp?.juristicNumber || '-'}
-                      </span>
-                    </div>
-
-                    <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
-                      <span className="text-slate-500 dark:text-slate-400 text-xs block mb-0.5">
-                        {language === 'th' ? 'เลขประจำตัวผู้เสียภาษี 13 หลัก' : 'Tax ID (13 digits)'}
-                      </span>
-                      <span className="font-semibold text-slate-900 dark:text-white text-xs sm:text-sm font-mono tracking-wider">
-                        {user.taxId || userApp?.taxId || '-'}
-                      </span>
-                    </div>
-
-                    <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
-                      <span className="text-slate-500 dark:text-slate-400 text-xs block mb-0.5">
-                        {language === 'th' ? 'Ref ID (Production / Test)' : 'Ref ID (Prod / Test)'}
-                      </span>
-                      <span className="font-semibold text-slate-900 dark:text-white text-xs font-mono">
-                        {userApp?.refIdProduction || userApp?.refIdTest || '-'}
-                      </span>
-                    </div>
-
-                    <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
-                      <span className="text-slate-500 dark:text-slate-400 text-xs block mb-1">
-                        {language === 'th' ? 'หมวดการใช้งาน' : 'Service Category'}
-                      </span>
-                      <div className="font-semibold text-slate-900 dark:text-white text-xs leading-relaxed">
-                        {user.nswCategory || userApp?.nswCategory ? (
-                          <div className="flex flex-wrap gap-1 mt-0.5">
-                            {(user.nswCategory || userApp?.nswCategory || '')
-                              .split(',')
-                              .map((c) => c.trim())
-                              .filter(Boolean)
-                              .map((cat, i) => (
-                                <span
-                                  key={i}
-                                  className="inline-flex items-center px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800 text-[11px] font-medium"
-                                >
-                                  {cat}
-                                </span>
-                              ))}
-                          </div>
-                        ) : (
-                          <span className="text-slate-400 dark:text-slate-500 font-normal">-</span>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
-                      <span className="text-slate-500 dark:text-slate-400 text-xs block mb-1">
-                        {language === 'th' ? 'รหัสโปรไฟล์ NSW (โปร & เทส)' : 'NSW Profile Codes (Prod & Test)'}
-                      </span>
-                      {((user.nswProfiles && user.nswProfiles.length > 0) || (userApp?.nswProfiles && userApp.nswProfiles.length > 0)) ? (
-                        <div className="flex flex-col gap-1.5 mt-0.5 font-mono text-xs">
-                          {(user.nswProfiles || userApp?.nswProfiles || []).map((p, idx) => (
-                            <div key={idx} className="flex items-center gap-1.5 flex-wrap">
-                              <span
-                                className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
-                                  p.type === 'production'
-                                    ? 'bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800'
-                                    : 'bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800'
-                                }`}
-                              >
-                                {p.type === 'production' ? 'โปร (Prod)' : 'เทส (Test)'}
-                              </span>
-                              <span className="font-semibold text-slate-900 dark:text-white">
-                                {p.code}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <span className="font-semibold text-emerald-600 dark:text-emerald-400 text-xs font-mono">
-                          {user.nswProfile || userApp?.nswProfile || '-'}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
+                </div>
+                <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto">
                   <button
                     type="button"
-                    onClick={() => setActiveTab('esap')}
-                    className="w-full mt-3 py-2 px-3 rounded-xl border border-indigo-200 dark:border-indigo-800/80 bg-indigo-50/60 dark:bg-indigo-950/40 text-xs font-semibold text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 flex items-center justify-center gap-2 transition-colors shadow-2xs"
+                    onClick={handleFillSampleDataInDashboard}
+                    className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-amber-600 hover:bg-amber-700 rounded-xl shadow-xs transition-colors"
                   >
-                    <FileText className="w-3.5 h-3.5" />
-                    <span>
-                      {language === 'th'
-                        ? 'เปิดดูใบสมัครสมาชิกโปรแกรม ESAP (Paperless ebXML) ฉบับเต็ม'
-                        : 'Open Full ESAP Paperless ebXML Application'}
-                    </span>
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>{language === 'th' ? 'เติมข้อมูลตัวอย่างฟอร์ม ESAP' : 'Fill Sample ESAP Data'}</span>
                   </button>
-                </div>
-
-                <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
-                  <span className="text-slate-500 dark:text-slate-400 text-xs block mb-1">
-                    {language === 'th' ? 'คำแนะนำตัว (Bio)' : 'Bio'}
-                  </span>
-                  <p className="text-slate-700 dark:text-slate-300">
-                    {user.bio || (language === 'th' ? 'ยังไม่ได้ระบุข้อมูลคำแนะนำตัว' : 'No bio provided')}
-                  </p>
+                  <button
+                    type="button"
+                    onClick={handleStartEditing}
+                    className="px-3.5 py-2 text-xs font-semibold text-amber-900 dark:text-amber-200 bg-amber-100 dark:bg-amber-900/40 hover:bg-amber-200/80 rounded-xl transition-colors border border-amber-300 dark:border-amber-700"
+                  >
+                    <span>{language === 'th' ? 'กรอกข้อมูล' : 'Edit'}</span>
+                  </button>
                 </div>
               </div>
             )}
+
+            {/* Container for profile & registration details */}
+            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-xs">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-4 mb-5 border-b border-slate-100 dark:border-slate-800 gap-3">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-bold text-slate-900 dark:text-white text-base">
+                      {language === 'th' ? 'ข้อมูลบัญชี & สถานประกอบการ' : 'Account & Enterprise Info'}
+                    </h3>
+                    <span className="text-[11px] px-2 py-0.5 rounded-full font-medium bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200/60 dark:border-indigo-800/60">
+                      {language === 'th' ? 'สัมพันธ์กับขั้นตอนสมัครสมาชิก' : 'Registration Linked'}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    {language === 'th'
+                      ? 'รวบรวมข้อมูลตามขั้นตอนการสมัครสมาชิก 3 ขั้นตอน (บัญชีผู้ใช้, ภ.พ.20/โปรแกรม ESAP, และเอกสาร CA)'
+                      : 'Aggregated across all 3 registration steps (Account, P.P.20/Programs, and CA docs)'}
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2 self-stretch sm:self-auto">
+                  <button
+                    type="button"
+                    onClick={handleFillSampleDataInDashboard}
+                    title="เติมข้อมูลจำลองครบทุกช่อง"
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/50 hover:bg-amber-100 dark:hover:bg-amber-900/60 border border-amber-200 dark:border-amber-800 rounded-lg transition-colors"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                    <span>{language === 'th' ? 'เติมข้อมูลตัวอย่าง' : 'Fill Sample'}</span>
+                  </button>
+
+                  {!isEditing ? (
+                    <button
+                      type="button"
+                      onClick={handleStartEditing}
+                      className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 rounded-lg transition-colors border border-indigo-200 dark:border-indigo-800"
+                    >
+                      <Edit3 className="w-3.5 h-3.5" />
+                      <span>{t.editProfile}</span>
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setIsEditing(false)}
+                      className="px-3.5 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors border border-slate-200 dark:border-slate-700"
+                    >
+                      {t.cancel}
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {isEditing ? (
+                /* EDIT FORM */
+                <form onSubmit={handleSaveProfile} className="space-y-6">
+                  {/* Avatar Picker */}
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2">
+                      {language === 'th' ? 'เลือกรูปโปรไฟล์' : 'Select Avatar'}
+                    </label>
+                    <div className="flex items-center gap-3 overflow-x-auto pb-2">
+                      {avatarPresets.map((preset, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => setAvatar(preset)}
+                          className={`relative rounded-xl p-0.5 transition-all shrink-0 ${
+                            avatar === preset
+                              ? 'ring-2 ring-indigo-600 ring-offset-2 dark:ring-offset-slate-900 scale-105'
+                              : 'opacity-70 hover:opacity-100'
+                          }`}
+                        >
+                          <img
+                            src={preset}
+                            alt="Preset avatar"
+                            className="w-12 h-12 rounded-lg object-cover bg-slate-100 dark:bg-slate-800"
+                            referrerPolicy="no-referrer"
+                          />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Group 1: Contact Person / ผู้ประสานงาน */}
+                  <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 space-y-3">
+                    <h4 className="text-xs font-bold text-indigo-600 dark:text-indigo-400 flex items-center gap-1.5">
+                      <UserCheck className="w-3.5 h-3.5" />
+                      <span>{language === 'th' ? 'ขั้นตอนที่ 1 & ผู้ประสานงาน: ข้อมูลติดต่อ / ผู้ประสานงาน' : 'Step 1 & Coordinator Contact'}</span>
+                    </h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div>
+                        <label className="block text-[11px] font-medium text-slate-600 dark:text-slate-400 mb-1">
+                          คำนำหน้า
+                        </label>
+                        <select
+                          value={editContactPrefix}
+                          onChange={(e) => setEditContactPrefix(e.target.value)}
+                          className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                        >
+                          <option value="นาย">นาย</option>
+                          <option value="นาง">นาง</option>
+                          <option value="นางสาว">นางสาว</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-medium text-slate-600 dark:text-slate-400 mb-1">
+                          ชื่อผู้ประสานงาน
+                        </label>
+                        <input
+                          type="text"
+                          value={editContactFirstName}
+                          onChange={(e) => setEditContactFirstName(e.target.value)}
+                          placeholder="เช่น วราภรณ์"
+                          className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-medium text-slate-600 dark:text-slate-400 mb-1">
+                          นามสกุลผู้ประสานงาน
+                        </label>
+                        <input
+                          type="text"
+                          value={editContactLastName}
+                          onChange={(e) => setEditContactLastName(e.target.value)}
+                          placeholder="เช่น มั่นคง"
+                          className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div>
+                        <label className="block text-[11px] font-medium text-slate-600 dark:text-slate-400 mb-1">
+                          ตำแหน่ง
+                        </label>
+                        <input
+                          type="text"
+                          value={editContactPosition}
+                          onChange={(e) => setEditContactPosition(e.target.value)}
+                          placeholder="เช่น ผู้จัดการฝ่ายพิธีการศุลกากร"
+                          className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-medium text-slate-600 dark:text-slate-400 mb-1">
+                          เบอร์มือถือ
+                        </label>
+                        <input
+                          type="text"
+                          value={editContactMobile}
+                          onChange={(e) => setEditContactMobile(e.target.value)}
+                          placeholder="081-444-5555"
+                          className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-mono"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-medium text-slate-600 dark:text-slate-400 mb-1">
+                          อีเมลผู้ประสานงาน
+                        </label>
+                        <input
+                          type="email"
+                          value={editContactEmail}
+                          onChange={(e) => setEditContactEmail(e.target.value)}
+                          placeholder="contact@company.co.th"
+                          className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Group 2: Enterprise P.P.20 */}
+                  <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 space-y-3">
+                    <h4 className="text-xs font-bold text-indigo-600 dark:text-indigo-400 flex items-center gap-1.5">
+                      <Building2 className="w-3.5 h-3.5" />
+                      <span>{language === 'th' ? 'ขั้นตอนที่ 2: ข้อมูลสถานประกอบการ (ภ.พ.20) & ที่อยู่' : 'Step 2: P.P.20 Enterprise & Address'}</span>
+                    </h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[11px] font-medium text-slate-600 dark:text-slate-400 mb-1">
+                          ชื่อสถานประกอบการ (ภ.พ.20 / ภาษาไทย)
+                        </label>
+                        <input
+                          type="text"
+                          value={editCompanyTh}
+                          onChange={(e) => setEditCompanyTh(e.target.value)}
+                          placeholder="บริษัท ตัวอย่าง จำกัด"
+                          className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-medium text-slate-600 dark:text-slate-400 mb-1">
+                          ชื่อสถานประกอบการ (ภาษาอังกฤษ)
+                        </label>
+                        <input
+                          type="text"
+                          value={editCompanyEn}
+                          onChange={(e) => setEditCompanyEn(e.target.value)}
+                          placeholder="Example Co., Ltd."
+                          className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div>
+                        <label className="block text-[11px] font-medium text-slate-600 dark:text-slate-400 mb-1">
+                          เลขประจำตัวผู้เสียภาษี 13 หลัก
+                        </label>
+                        <input
+                          type="text"
+                          value={editTaxId}
+                          onChange={(e) => setEditTaxId(e.target.value)}
+                          maxLength={13}
+                          placeholder="0105558000123"
+                          className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-mono"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-medium text-slate-600 dark:text-slate-400 mb-1">
+                          ทะเบียนนิติบุคคลเลขที่
+                        </label>
+                        <input
+                          type="text"
+                          value={editJuristic}
+                          onChange={(e) => setEditJuristic(e.target.value)}
+                          placeholder="0105558000123"
+                          className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-mono"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-medium text-slate-600 dark:text-slate-400 mb-1">
+                          ประเภทธุรกิจ
+                        </label>
+                        <input
+                          type="text"
+                          value={editBusinessType}
+                          onChange={(e) => setEditBusinessType(e.target.value)}
+                          placeholder="นำเข้า-ส่งออกสินค้า"
+                          className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-medium text-slate-600 dark:text-slate-400 mb-1">
+                        ที่อยู่จดทะเบียนตาม ภ.พ.20
+                      </label>
+                      <input
+                        type="text"
+                        value={editAddress}
+                        onChange={(e) => setEditAddress(e.target.value)}
+                        placeholder="เลขที่ อาคาร ชั้น ถนน แขวง/ตำบล เขต/อำเภอ จังหวัด รหัสไปรษณีย์"
+                        className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Group 3: NSW Profile Codes */}
+                  <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 space-y-3">
+                    <h4 className="text-xs font-bold text-indigo-600 dark:text-indigo-400 flex items-center gap-1.5">
+                      <FileCode className="w-3.5 h-3.5" />
+                      <span>{language === 'th' ? 'หมวดการใช้งาน NSW & รหัสโปรไฟล์' : 'NSW Service Category & Profile Codes'}</span>
+                    </h4>
+                    <div>
+                      <label className="block text-[11px] font-medium text-slate-600 dark:text-slate-400 mb-1">
+                        หมวดการใช้งาน NSW (Service Categories)
+                      </label>
+                      <input
+                        type="text"
+                        value={editNswCategory}
+                        onChange={(e) => setEditNswCategory(e.target.value)}
+                        placeholder="เช่น NSW Gateway, นำเข้า-ส่งออกทั่วไป"
+                        className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[11px] font-medium text-emerald-700 dark:text-emerald-400 mb-1">
+                          รหัสโปรไฟล์ โปร (Production)
+                        </label>
+                        <input
+                          type="text"
+                          value={editNswProfileProd}
+                          onChange={(e) => setEditNswProfileProd(e.target.value)}
+                          placeholder="เช่น NSW-PROD-2024-001"
+                          className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-mono"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-medium text-amber-700 dark:text-amber-400 mb-1">
+                          รหัสโปรไฟล์ เทส (Test)
+                        </label>
+                        <input
+                          type="text"
+                          value={editNswProfileTest}
+                          onChange={(e) => setEditNswProfileTest(e.target.value)}
+                          placeholder="เช่น NSW-TEST-2024-001"
+                          className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-mono"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Group 4: ESAP Programs Checklist */}
+                  <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-xs font-bold text-indigo-600 dark:text-indigo-400 flex items-center gap-1.5">
+                        <Layers className="w-3.5 h-3.5" />
+                        <span>{language === 'th' ? 'เลือกใช้โปรแกรม ESAP (ติ๊กเลือกโปรแกรมที่ต้องการใช้งาน)' : 'ESAP Programs Checklist'}</span>
+                      </h4>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const allKeys = Object.keys(ESAP_PROGRAM_MAP);
+                          setEditSelectedPrograms(editSelectedPrograms.length === allKeys.length ? [] : allKeys);
+                        }}
+                        className="text-[11px] text-indigo-600 dark:text-indigo-400 hover:underline"
+                      >
+                        {editSelectedPrograms.length === Object.keys(ESAP_PROGRAM_MAP).length ? 'ยกเลิกทั้งหมด' : 'เลือกทั้งหมด'}
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5">
+                      {Object.entries(ESAP_PROGRAM_MAP).map(([key, prog]) => {
+                        const isChecked = editSelectedPrograms.includes(key);
+                        return (
+                          <div
+                            key={key}
+                            onClick={() => {
+                              setEditSelectedPrograms((prev) =>
+                                prev.includes(key) ? prev.filter((p) => p !== key) : [...prev, key]
+                              );
+                            }}
+                            className={`p-2.5 rounded-xl border cursor-pointer transition-all flex items-center gap-2.5 ${
+                              isChecked
+                                ? 'border-indigo-500 bg-indigo-50/70 dark:bg-indigo-950/60 shadow-xs'
+                                : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-slate-300'
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={() => {}}
+                              className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 pointer-events-none"
+                            />
+                            <img
+                              src={prog.logo}
+                              alt={prog.label}
+                              className="w-7 h-7 object-contain rounded shrink-0 bg-white dark:bg-slate-900 p-0.5"
+                            />
+                            <div className="min-w-0">
+                              <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                                {prog.label}
+                              </div>
+                              <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+                                {prog.desc}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Group 5: CA Password */}
+                  <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 space-y-3">
+                    <h4 className="text-xs font-bold text-indigo-600 dark:text-indigo-400 flex items-center gap-1.5">
+                      <Key className="w-3.5 h-3.5" />
+                      <span>{language === 'th' ? 'ขั้นตอนที่ 3: รหัสผ่าน CA (Password CA - .p12 / PFX)' : 'Step 3: CA Password'}</span>
+                    </h4>
+                    <div className="relative">
+                      <input
+                        type={showCaPasswordInDashboard ? 'text' : 'password'}
+                        value={editCaPassword}
+                        onChange={(e) => setEditCaPassword(e.target.value)}
+                        placeholder="กรอกรหัสผ่านสำหรับไฟล์ CA (.p12) ถ้ามี"
+                        className="w-full px-3 py-2 pr-10 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-mono"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowCaPasswordInDashboard(!showCaPasswordInDashboard)}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                      >
+                        {showCaPasswordInDashboard ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Bio */}
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                      {language === 'th' ? 'เกี่ยวกับฉัน (Bio)' : 'Bio'}
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={bio}
+                      onChange={(e) => setBio(e.target.value)}
+                      placeholder={language === 'th' ? 'เขียนแนะนำตัวเองสั้นๆ...' : 'A brief description...'}
+                      className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                    />
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex items-center gap-3 pt-2">
+                    <button
+                      type="submit"
+                      className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 transition-colors shadow-xs"
+                    >
+                      <Save className="w-4 h-4" />
+                      <span>{t.saveChanges}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsEditing(false)}
+                      className="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                    >
+                      {t.cancel}
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                /* VIEW MODE - 4 STRUCTURED SECTIONS */
+                <div className="space-y-6">
+                  {/* Section 1: ข้อมูลบัญชีผู้ใช้งาน & ผู้ประสานงาน */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-bold text-xs text-indigo-600 dark:text-indigo-400 flex items-center gap-1.5 uppercase tracking-wider">
+                        <UserCheck className="w-3.5 h-3.5" />
+                        <span>{language === 'th' ? '1. ข้อมูลบัญชีผู้ใช้งาน & ผู้ประสานงาน' : '1. Account & Coordinator Contact'}</span>
+                      </h4>
+                      <span className="text-[10px] text-slate-400">ขั้นตอนที่ 1 & 2</span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+                      <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
+                        <span className="text-slate-500 dark:text-slate-400 text-xs block mb-1">
+                          {t.username}
+                        </span>
+                        <span className="font-semibold text-slate-900 dark:text-white text-xs sm:text-sm font-mono text-indigo-600 dark:text-indigo-400">
+                          @{user.username}
+                        </span>
+                      </div>
+
+                      <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
+                        <span className="text-slate-500 dark:text-slate-400 text-xs block mb-1">
+                          {t.email}
+                        </span>
+                        <span className="font-semibold text-slate-900 dark:text-white text-xs sm:text-sm break-all">
+                          {user.email || userApp?.contactEmail || userApp?.email || '-'}
+                        </span>
+                      </div>
+
+                      <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
+                        <span className="text-slate-500 dark:text-slate-400 text-xs block mb-1">
+                          {t.phone}
+                        </span>
+                        <span className="font-semibold text-slate-900 dark:text-white text-xs sm:text-sm font-mono">
+                          {user.phone || userApp?.contactMobile || userApp?.contactPhone || '-'}
+                        </span>
+                      </div>
+
+                      <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
+                        <span className="text-slate-500 dark:text-slate-400 text-xs block mb-1">
+                          {language === 'th' ? 'สถานะบัญชี' : 'Status'}
+                        </span>
+                        <span className="inline-flex items-center gap-1 font-semibold text-emerald-600 dark:text-emerald-400 text-xs">
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          <span>{language === 'th' ? 'ปกติ (Active)' : 'Active'}</span>
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Coordinator Contact Card */}
+                    <div className="p-3.5 rounded-xl bg-gradient-to-r from-slate-50 to-indigo-50/30 dark:from-slate-800/60 dark:to-indigo-950/20 border border-slate-200/80 dark:border-slate-800">
+                      <div className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2 flex items-center gap-1.5">
+                        <Briefcase className="w-3.5 h-3.5 text-indigo-500" />
+                        <span>{language === 'th' ? 'ข้อมูลผู้ประสานงาน (ตามแบบฟอร์ม ESAP):' : 'Coordinator Contact Details:'}</span>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                        <div>
+                          <span className="text-slate-500 dark:text-slate-400 block mb-0.5">ชื่อ-นามสกุล / ตำแหน่ง</span>
+                          <span className="font-bold text-slate-900 dark:text-white">
+                            {userApp?.contactFirstName
+                              ? `${userApp.contactPrefix ? userApp.contactPrefix + ' ' : ''}${userApp.contactFirstName} ${userApp.contactLastName || ''}`
+                              : (user.name || '-')}
+                          </span>
+                          {userApp?.contactPosition && (
+                            <span className="text-[11px] text-slate-500 dark:text-slate-400 block">
+                              ({userApp.contactPosition})
+                            </span>
+                          )}
+                        </div>
+                        <div>
+                          <span className="text-slate-500 dark:text-slate-400 block mb-0.5">เบอร์มือถือผู้ประสานงาน</span>
+                          <span className="font-semibold text-slate-900 dark:text-white font-mono">
+                            {userApp?.contactMobile || userApp?.contactPhone || user.phone || '-'}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-slate-500 dark:text-slate-400 block mb-0.5">อีเมลติดต่อประสานงาน</span>
+                          <span className="font-semibold text-slate-900 dark:text-white break-all">
+                            {userApp?.contactEmail || user.email || '-'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Section 2: ข้อมูลสถานประกอบการ (ภ.พ.20) & ที่อยู่ */}
+                  <div className="pt-4 border-t border-slate-100 dark:border-slate-800 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-bold text-xs text-indigo-600 dark:text-indigo-400 flex items-center gap-1.5 uppercase tracking-wider">
+                        <Building2 className="w-3.5 h-3.5" />
+                        <span>{language === 'th' ? '2. ข้อมูลสถานประกอบการ (ภ.พ.20) & ที่อยู่' : '2. Enterprise (P.P.20) & Address'}</span>
+                      </h4>
+                      <span className="text-[10px] px-2 py-0.5 rounded-md font-medium bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200/60 dark:border-indigo-800/60">
+                        ESAP ebXML
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
+                        <span className="text-slate-500 dark:text-slate-400 text-xs block mb-0.5">
+                          {language === 'th' ? 'ชื่อสถานประกอบการ (ภ.พ.20 / ภาษาไทย)' : 'Company Name (P.P.20 / TH)'}
+                        </span>
+                        <span className="font-semibold text-slate-900 dark:text-white text-xs sm:text-sm">
+                          {user.companyNameTh || user.companyName || userApp?.companyNameTh || userApp?.companyName || '-'}
+                        </span>
+                      </div>
+
+                      <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
+                        <span className="text-slate-500 dark:text-slate-400 text-xs block mb-0.5">
+                          {language === 'th' ? 'ชื่อสถานประกอบการ (ภาษาอังกฤษ)' : 'Company Name (EN)'}
+                        </span>
+                        <span className="font-semibold text-slate-900 dark:text-white text-xs sm:text-sm">
+                          {user.companyNameEn || userApp?.companyNameEn || '-'}
+                        </span>
+                      </div>
+
+                      <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
+                        <span className="text-slate-500 dark:text-slate-400 text-xs block mb-0.5">
+                          {language === 'th' ? 'เลขประจำตัวผู้เสียภาษี 13 หลัก' : 'Tax ID (13 digits)'}
+                        </span>
+                        <span className="font-semibold text-slate-900 dark:text-white text-xs sm:text-sm font-mono tracking-wider">
+                          {user.taxId || userApp?.taxId || '-'}
+                        </span>
+                      </div>
+
+                      <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
+                        <span className="text-slate-500 dark:text-slate-400 text-xs block mb-0.5">
+                          {language === 'th' ? 'ทะเบียนนิติบุคคลเลขที่' : 'Juristic Registered No.'}
+                        </span>
+                        <span className="font-semibold text-slate-900 dark:text-white text-xs font-mono">
+                          {user.juristicNumber || userApp?.juristicNumber || user.taxId || '-'}
+                        </span>
+                      </div>
+
+                      <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
+                        <span className="text-slate-500 dark:text-slate-400 text-xs block mb-0.5">
+                          {language === 'th' ? 'ประเภท Paperless Type / ธุรกิจ' : 'Paperless Type / Business'}
+                        </span>
+                        <span className="font-semibold text-indigo-700 dark:text-indigo-300 text-xs">
+                          {(user.paperlessType || userApp?.paperlessType || 'Exporter/Importer')}
+                          {(user.businessType || userApp?.businessType) ? ` • ${user.businessType || userApp?.businessType}` : ''}
+                        </span>
+                      </div>
+
+                      <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
+                        <span className="text-slate-500 dark:text-slate-400 text-xs block mb-0.5">
+                          {language === 'th' ? 'Ref ID (Production / Test)' : 'Ref ID (Prod / Test)'}
+                        </span>
+                        <span className="font-semibold text-slate-900 dark:text-white text-xs font-mono">
+                          {userApp?.refIdProduction || userApp?.refIdTest
+                            ? `${userApp.refIdProduction || '-'} (Prod) / ${userApp.refIdTest || '-'} (Test)`
+                            : '-'}
+                        </span>
+                      </div>
+
+                      {/* Full registered address */}
+                      <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800 sm:col-span-2">
+                        <span className="text-slate-500 dark:text-slate-400 text-xs block mb-0.5 flex items-center gap-1">
+                          <MapPin className="w-3.5 h-3.5 text-rose-500" />
+                          <span>{language === 'th' ? 'ที่อยู่ตาม ภ.พ.20 (สถานที่จัดส่งใบแจ้งค่าใช้บริการ/วางบิล)' : 'Registered Address (P.P.20)'}</span>
+                        </span>
+                        <span className="font-medium text-slate-800 dark:text-slate-200 text-xs sm:text-sm leading-relaxed">
+                          {userApp?.registeredAddress || (userApp?.billingHouseNo ? `${userApp.billingHouseNo} ${userApp.billingBuilding || ''} ${userApp.billingRoad || ''} ${userApp.billingSubDistrict || ''} ${userApp.billingDistrict || ''} ${userApp.billingProvince || ''} ${userApp.billingPostalCode || ''}`.trim() : '-')}
+                        </span>
+                      </div>
+
+                      {/* NSW Service Category */}
+                      <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
+                        <span className="text-slate-500 dark:text-slate-400 text-xs block mb-1">
+                          {language === 'th' ? 'หมวดการใช้งาน NSW' : 'Service Category'}
+                        </span>
+                        <div className="font-semibold text-slate-900 dark:text-white text-xs leading-relaxed">
+                          {user.nswCategory || userApp?.nswCategory ? (
+                            <div className="flex flex-wrap gap-1 mt-0.5">
+                              {(user.nswCategory || userApp?.nswCategory || '')
+                                .split(',')
+                                .map((c) => c.trim())
+                                .filter(Boolean)
+                                .map((cat, i) => (
+                                  <span
+                                    key={i}
+                                    className="inline-flex items-center px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800 text-[11px] font-medium"
+                                  >
+                                    {cat}
+                                  </span>
+                                ))}
+                            </div>
+                          ) : (
+                            <span className="text-slate-400 dark:text-slate-500 font-normal">-</span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* NSW Profile Codes */}
+                      <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
+                        <span className="text-slate-500 dark:text-slate-400 text-xs block mb-1">
+                          {language === 'th' ? 'รหัสโปรไฟล์ NSW (โปร & เทส)' : 'NSW Profile Codes (Prod & Test)'}
+                        </span>
+                        {((user.nswProfiles && user.nswProfiles.length > 0) || (userApp?.nswProfiles && userApp.nswProfiles.length > 0)) ? (
+                          <div className="flex flex-col gap-1.5 mt-0.5 font-mono text-xs">
+                            {(user.nswProfiles || userApp?.nswProfiles || []).map((p, idx) => (
+                              <div key={idx} className="flex items-center gap-1.5 flex-wrap">
+                                <span
+                                  className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                                    p.type === 'production'
+                                      ? 'bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800'
+                                      : 'bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800'
+                                  }`}
+                                >
+                                  {p.type === 'production' ? 'โปร (Prod)' : 'เทส (Test)'}
+                                </span>
+                                <span className="font-semibold text-slate-900 dark:text-white">
+                                  {p.code}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="font-semibold text-emerald-600 dark:text-emerald-400 text-xs font-mono">
+                            {user.nswProfile || userApp?.nswProfile || '-'}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Section 3: โปรแกรม ESAP ที่เลือกใช้งาน */}
+                  <div className="pt-4 border-t border-slate-100 dark:border-slate-800 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-bold text-xs text-indigo-600 dark:text-indigo-400 flex items-center gap-1.5 uppercase tracking-wider">
+                        <Layers className="w-3.5 h-3.5" />
+                        <span>{language === 'th' ? '3. โปรแกรม ESAP ที่เลือกใช้งาน (7 โปรแกรม)' : '3. Selected ESAP Programs'}</span>
+                      </h4>
+                      <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                        เลือกแล้ว {((user.selectedPrograms || userApp?.selectedPrograms || []).length)} / 7 โปรแกรม
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5">
+                      {Object.entries(ESAP_PROGRAM_MAP).map(([key, prog]) => {
+                        const isSelected = (user.selectedPrograms || userApp?.selectedPrograms || []).includes(key);
+                        return (
+                          <div
+                            key={key}
+                            className={`p-2.5 rounded-xl border transition-all flex items-center gap-2.5 ${
+                              isSelected
+                                ? 'border-emerald-400 dark:border-emerald-700 bg-emerald-50/50 dark:bg-emerald-950/30'
+                                : 'border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 opacity-60'
+                            }`}
+                          >
+                            <img
+                              src={prog.logo}
+                              alt={prog.label}
+                              className="w-8 h-8 object-contain rounded shrink-0 bg-white dark:bg-slate-900 p-0.5 border border-slate-200 dark:border-slate-700"
+                            />
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                                  {prog.label}
+                                </span>
+                                {isSelected ? (
+                                  <span className="text-[9px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-900/60 px-1 rounded">
+                                    ใช้งาน
+                                  </span>
+                                ) : (
+                                  <span className="text-[9px] text-slate-400">
+                                    -
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+                                {prog.desc}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Section 4: สถานะเอกสารและรหัสผ่าน CA */}
+                  <div className="pt-4 border-t border-slate-100 dark:border-slate-800 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-bold text-xs text-indigo-600 dark:text-indigo-400 flex items-center gap-1.5 uppercase tracking-wider">
+                        <FileCheck2 className="w-3.5 h-3.5" />
+                        <span>{language === 'th' ? '4. สถานะเอกสารและรหัสผ่าน CA' : '4. CA Documents & Password'}</span>
+                      </h4>
+                      <span className="text-[10px] text-slate-400">ขั้นตอนที่ 3</span>
+                    </div>
+
+                    {/* CA Documents list */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                      {[
+                        { title: 'สำเนา ภ.พ.20 (ภพ.20)', type: 'vat_pp20' },
+                        { title: 'หนังสือมอบอำนาจพร้อมติดอากรสแตมป์ (ถ้ามี)', type: 'power_of_attorney' },
+                        { title: 'สำเนาบัตรผู้รับมอบอำนาจ', type: 'attorney_id' },
+                        { title: 'หนังสือรับรองนิติบุคคล (DBD คัดสำเนาไม่เกิน 6 เดือน)', type: 'company_cert' },
+                        { title: 'สำเนาบัตรประชาชนกรรมการผู้มีอำนาจ (พร้อมลงนามรับรอง)', type: 'director_id' },
+                        { title: 'เอกสารคำขอใช้งาน Digital Certificate / ใบสมัคร CA (ไฟล์ .p12)', type: 'ca_request' },
+                      ].map((docItem, idx) => {
+                        const matchedDoc = userApp?.documents?.find((d) => d.type === docItem.type && d.fileName);
+                        return (
+                          <div
+                            key={idx}
+                            className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2"
+                          >
+                            <div className="min-w-0">
+                              <span className="font-medium text-slate-800 dark:text-slate-200 block truncate">
+                                {docItem.title}
+                              </span>
+                              {matchedDoc?.fileName && (
+                                <span className="text-[10px] text-indigo-600 dark:text-indigo-400 truncate block">
+                                  📎 {matchedDoc.fileName}
+                                </span>
+                              )}
+                            </div>
+                            <span
+                              className={`shrink-0 text-[10px] px-2 py-0.5 rounded-full font-medium ${
+                                matchedDoc?.fileName
+                                  ? 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300'
+                                  : 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400'
+                              }`}
+                            >
+                              {matchedDoc?.fileName ? 'แนบแล้ว' : 'ยังไม่ได้แนบ'}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* CA Password display */}
+                    <div className="p-3 rounded-xl bg-indigo-50/50 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/50 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Key className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
+                        <div>
+                          <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 block">
+                            รหัสผ่าน CA (Password CA - .p12 / PFX)
+                          </span>
+                          <span className="text-[11px] font-mono text-slate-600 dark:text-slate-300">
+                            {showCaPasswordInDashboard
+                              ? (user.caPassword || userApp?.caPassword || '(ไม่ได้ระบุรหัสผ่าน)')
+                              : '••••••••••••'}
+                          </span>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setShowCaPasswordInDashboard(!showCaPasswordInDashboard)}
+                        className="text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 flex items-center gap-1 px-2.5 py-1 rounded-lg hover:bg-indigo-100/50 dark:hover:bg-indigo-900/40"
+                      >
+                        {showCaPasswordInDashboard ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                        <span>{showCaPasswordInDashboard ? 'ซ่อน' : 'แสดง'}</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Navigation to full ebXML printable view */}
+                  <div className="pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('esap')}
+                      className="w-full py-2.5 px-4 rounded-xl border border-indigo-200 dark:border-indigo-800/80 bg-indigo-50/60 dark:bg-indigo-950/40 text-xs font-semibold text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 flex items-center justify-center gap-2 transition-colors shadow-2xs"
+                    >
+                      <FileText className="w-4 h-4" />
+                      <span>
+                        {language === 'th'
+                          ? 'เปิดดูใบสมัครสมาชิกโปรแกรม ESAP (Paperless ebXML) ฉบับเต็ม'
+                          : 'Open Full ESAP Paperless ebXML Application'}
+                      </span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Membership Badge & Verification Sidebar */}
           <div className="space-y-6">
             <div className="bg-gradient-to-br from-indigo-900 via-indigo-950 to-slate-950 text-white rounded-2xl p-6 shadow-md relative overflow-hidden">
               <div className="flex items-center justify-between mb-4">
-                <span className="text-xs uppercase tracking-widest text-indigo-300 font-semibold font-mono">
-                  SiamAuth Digital ID
-                </span>
+                <div className="flex items-center gap-2">
+                  <img
+                    src="/assets/aistudio/image_7cb182a3.png"
+                    alt="ESAP"
+                    className="h-5 w-auto object-contain bg-white/10 rounded px-1.5 py-0.5"
+                  />
+                  <span className="text-xs uppercase tracking-widest text-indigo-200 font-bold font-mono">
+                    ESAP DIGITAL ID
+                  </span>
+                </div>
                 <Shield className="w-5 h-5 text-indigo-400" />
               </div>
 
