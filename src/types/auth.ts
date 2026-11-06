@@ -35,6 +35,7 @@ export interface User {
   juristicNumber?: string;
   paperlessType?: string;
   caPassword?: string;
+  selectedPrograms?: string[];
 }
 
 export interface Session {
@@ -135,6 +136,9 @@ export interface RegistrationApplication {
   contactPhone: string;
   contactMobile: string;
   contactEmail: string;
+
+  // โปรแกรมที่เลือกใช้งาน (ESAP Programs)
+  selectedPrograms?: string[];
 
   // Compatibility fields
   registeredAddress?: string;

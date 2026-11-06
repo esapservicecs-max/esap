@@ -48,6 +48,16 @@ import {
   getStoredApplications,
 } from '../services/storage';
 
+const ESAP_PROGRAM_MAP: Record<string, { label: string; desc: string }> = {
+  import: { label: 'import', desc: 'ใบขนสินค้าขาเข้า (Import)' },
+  export: { label: 'export', desc: 'ใบขนสินค้าขาออก (Export)' },
+  goods: { label: 'goods', desc: 'บัญชีราคาสินค้า (Goods)' },
+  carmanifest: { label: 'carmanifest', desc: 'บัญชีสินค้าทางรถ (Car Manifest)' },
+  etransit: { label: 'etransit', desc: 'ถ่ายลำและผ่านแดน (e-Transit)' },
+  airmanifest: { label: 'airmanifest', desc: 'บัญชีสินค้าทางอากาศ (Air Manifest)' },
+  rgoods: { label: 'rgoods', desc: 'คืนอากรและคลังสินค้า (Rgoods)' },
+};
+
 interface MemberDashboardProps {
   user: User;
   onUpdateUser: (user: User) => void;
@@ -1014,7 +1024,64 @@ export const MemberDashboard: React.FC<MemberDashboardProps> = ({
               </div>
             </div>
 
-            {/* Section 6: เอกสารประกอบและสถานะใบรับรองดิจิทัล (CA) */}
+            {/* Section 6: โปรแกรม ESAP ที่เลือกใช้งาน (Selected Programs) */}
+            <div className="mb-6 pb-5 border-b border-dashed border-slate-300 dark:border-slate-700">
+              <h4 className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white mb-3 flex items-center justify-between">
+                <span className="flex items-center gap-2">
+                  <Laptop className="w-4 h-4 text-amber-500" />
+                  <span>โปรแกรม ESAP ที่เลือกใช้งาน (Selected Programs) :</span>
+                </span>
+                <span className="text-xs font-normal text-slate-500">
+                  {((userApp?.selectedPrograms && userApp.selectedPrograms.length > 0)
+                    ? userApp.selectedPrograms
+                    : (user.selectedPrograms || [])
+                  ).length > 0
+                    ? `เลือกแล้ว ${((userApp?.selectedPrograms && userApp.selectedPrograms.length > 0) ? userApp.selectedPrograms : (user.selectedPrograms || [])).length} โปรแกรม`
+                    : 'ไม่ได้ระบุ'}
+                </span>
+              </h4>
+
+              {(() => {
+                const activePrograms =
+                  userApp?.selectedPrograms && userApp.selectedPrograms.length > 0
+                    ? userApp.selectedPrograms
+                    : user.selectedPrograms || [];
+
+                if (activePrograms.length === 0) {
+                  return (
+                    <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-xs text-slate-500 dark:text-slate-400">
+                      ไม่ได้เลือกโปรแกรมเฉพาะเจาะจง (สามารถแจ้งเจ้าหน้าที่ CS เพื่อเปิดใช้งานโมดูลเพิ่มเติมได้ตลอดเวลา)
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5">
+                    {activePrograms.map((progId) => {
+                      const progInfo = ESAP_PROGRAM_MAP[progId] || { label: progId, desc: progId };
+                      return (
+                        <div
+                          key={progId}
+                          className="flex items-center gap-2 p-2.5 rounded-xl bg-amber-50/80 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 text-xs text-slate-900 dark:text-white"
+                        >
+                          <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0" />
+                          <div className="min-w-0">
+                            <span className="font-bold font-mono text-amber-900 dark:text-amber-200 block truncate">
+                              {progInfo.label}
+                            </span>
+                            <span className="text-[10px] text-slate-500 dark:text-slate-400 block truncate">
+                              {progInfo.desc}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* Section 7: เอกสารประกอบและสถานะใบรับรองดิจิทัล (CA) */}
             <div>
               <h4 className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white mb-3 flex items-center justify-between">
                 <span>รายการเอกสารแนบเพื่อใช้งานระบบ CA (Digital Certificate) :</span>

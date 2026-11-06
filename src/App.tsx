@@ -103,7 +103,7 @@ export default function App() {
         isDark={isDark}
         onToggleTheme={handleToggleTheme}
         onLogout={handleLogout}
-        activeMode={authMode === 'register' ? 'register' : 'login'}
+        activeMode={authMode}
         onSwitchMode={(mode) => {
           setEditingApp(null);
           setAuthMode(mode);
@@ -193,7 +193,7 @@ export default function App() {
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500 dark:text-slate-400">
           <div className="flex items-center gap-2">
             <span className="font-semibold text-slate-700 dark:text-slate-300">
-              © {new Date().getFullYear()} esap testlogin
+              © {new Date().getFullYear()} ESAP TEST LOGIN
             </span>
             <span aria-hidden="true">·</span>
             <span>กระบวนการลงทะเบียนตามมาตรฐาน NSW & CA 4 ขั้นตอน</span>

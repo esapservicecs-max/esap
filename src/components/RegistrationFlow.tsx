@@ -24,6 +24,7 @@ import {
   KeyRound,
   Lock,
   Plus,
+  Laptop,
 } from 'lucide-react';
 import { Language, RegistrationApplication, CaDocument, User, NswProfileItem } from '../types/auth';
 import { translations } from '../locales/translations';
@@ -177,6 +178,27 @@ export const RegistrationFlow: React.FC<RegistrationFlowProps> = ({
   const [contactMobile, setContactMobile] = useState(initialApplication?.contactMobile || '');
   const [contactEmail, setContactEmail] = useState(initialApplication?.contactEmail || '');
 
+  // Section 6: โปรแกรมที่เลือกใช้งาน (ESAP Programs Checklist)
+  const [selectedPrograms, setSelectedPrograms] = useState<string[]>(
+    initialApplication?.selectedPrograms || []
+  );
+
+  const toggleProgram = (progId: string) => {
+    setSelectedPrograms((prev) =>
+      prev.includes(progId) ? prev.filter((p) => p !== progId) : [...prev, progId]
+    );
+  };
+
+  const esapPrograms = [
+    { id: 'import', name: 'Import', desc: 'ใบขนสินค้าขาเข้า' },
+    { id: 'export', name: 'Export', desc: 'ใบขนสินค้าขาออก' },
+    { id: 'goods', name: 'Goods', desc: 'บัญชีราคาสินค้า' },
+    { id: 'carmanifest', name: 'Carmanifest', desc: 'บัญชีสินค้าทางรถ' },
+    { id: 'etransit', name: 'eTransit', desc: 'ถ่ายลำ/ผ่านแดน' },
+    { id: 'airmanifest', name: 'Airmanifest', desc: 'บัญชีสินค้าทางอากาศ' },
+    { id: 'rgoods', name: 'Rgoods', desc: 'คืนอากร/คลังสินค้า' },
+  ];
+
   // Step 3: CA Documents
   const [documents, setDocuments] = useState<CaDocument[]>(
     initialApplication?.documents || [
@@ -311,6 +333,9 @@ export const RegistrationFlow: React.FC<RegistrationFlowProps> = ({
     setContactPhone('02-714-8899 ต่อ 104');
     setContactMobile('089-555-8899');
     setContactEmail(`choltarn@esapservice.co.th`);
+
+    // Programs
+    setSelectedPrograms(['import', 'export', 'goods']);
 
     // Attach sample documents
     setDocuments([
@@ -532,6 +557,7 @@ export const RegistrationFlow: React.FC<RegistrationFlowProps> = ({
 
       documents: finalDocs,
       caPassword: caPassword.trim(),
+      selectedPrograms,
       status: 'approved',
       submittedAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -571,6 +597,7 @@ export const RegistrationFlow: React.FC<RegistrationFlowProps> = ({
       juristicNumber: finalJuristic,
       paperlessType: paperlessType,
       caPassword: caPassword.trim(),
+      selectedPrograms,
     };
 
     const existingUsers = getStoredUsers();
@@ -1531,6 +1558,79 @@ export const RegistrationFlow: React.FC<RegistrationFlowProps> = ({
                     className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
                   />
                 </div>
+              </div>
+            </div>
+
+            {/* 6. เลือกใช้โปรแกรม (ESAP Programs Checklist Block) */}
+            <div className="p-4 sm:p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 pb-1">
+                <div>
+                  <h4 className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                    <Laptop className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                    <span>เลือกใช้โปรแกรม (ESAP Programs) :</span>
+                  </h4>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    บล็อคเช็กลิสต์ - ติ๊กเลือกโปรแกรมที่ต้องการใช้งานได้มากกว่า 1 ตัวเลือก (หรือเว้นว่างได้)
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  {selectedPrograms.length > 0 && (
+                    <span className="text-xs font-semibold text-amber-700 dark:text-amber-300 bg-amber-100/80 dark:bg-amber-950/80 px-2.5 py-0.5 rounded-lg border border-amber-300 dark:border-amber-800">
+                      เลือกแล้ว {selectedPrograms.length} โปรแกรม
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (selectedPrograms.length === esapPrograms.length) {
+                        setSelectedPrograms([]);
+                      } else {
+                        setSelectedPrograms(esapPrograms.map((p) => p.id));
+                      }
+                    }}
+                    className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-medium cursor-pointer"
+                  >
+                    {selectedPrograms.length === esapPrograms.length ? 'ล้างการเลือก' : 'เลือกทั้งหมด'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Programs Checklist Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5 pt-1">
+                {esapPrograms.map((prog) => {
+                  const isChecked = selectedPrograms.includes(prog.id);
+                  return (
+                    <button
+                      type="button"
+                      key={prog.id}
+                      onClick={() => toggleProgram(prog.id)}
+                      className={`flex items-start gap-2.5 p-3 text-left rounded-xl border transition-all cursor-pointer ${
+                        isChecked
+                          ? 'bg-amber-50/90 dark:bg-amber-950/60 border-amber-500 ring-2 ring-amber-500/20 text-slate-900 dark:text-white shadow-2xs'
+                          : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 text-slate-700 dark:text-slate-300'
+                      }`}
+                    >
+                      <div
+                        className={`w-4 h-4 rounded-md border mt-0.5 flex items-center justify-center transition-colors shrink-0 ${
+                          isChecked
+                            ? 'bg-amber-600 border-amber-600 text-white'
+                            : 'border-slate-400 dark:border-slate-600 bg-white dark:bg-slate-800'
+                        }`}
+                      >
+                        {isChecked && <Check className="w-3 h-3 stroke-[3]" />}
+                      </div>
+                      <div className="truncate">
+                        <span className="text-xs font-bold block truncate leading-tight">
+                          {prog.name}
+                        </span>
+                        <span className="text-[11px] text-slate-400 dark:text-slate-500 block truncate mt-0.5">
+                          {prog.desc}
+                        </span>
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 

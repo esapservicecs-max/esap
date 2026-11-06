@@ -257,6 +257,25 @@ export const CsReviewModal: React.FC<CsReviewModalProps> = ({
                   </div>
                 </div>
 
+                {/* Selected ESAP Programs */}
+                {selectedApp.selectedPrograms && selectedApp.selectedPrograms.length > 0 && (
+                  <div className="p-3 rounded-xl bg-amber-50/70 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/60 text-xs">
+                    <span className="font-semibold text-amber-900 dark:text-amber-200 block mb-1.5">
+                      โปรแกรม ESAP ที่เลือกใช้งาน ({selectedApp.selectedPrograms.length} โปรแกรม):
+                    </span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {selectedApp.selectedPrograms.map((prog) => (
+                        <span
+                          key={prog}
+                          className="px-2 py-0.5 rounded-md bg-white dark:bg-slate-800 border border-amber-300 dark:border-amber-700 text-amber-800 dark:text-amber-300 font-mono font-medium text-[11px]"
+                        >
+                          {prog}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* CA Documents Checklist */}
                 <div>
                   <h5 className="font-semibold text-xs text-slate-900 dark:text-white mb-2">
