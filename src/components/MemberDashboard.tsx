@@ -48,14 +48,14 @@ import {
   getStoredApplications,
 } from '../services/storage';
 
-const ESAP_PROGRAM_MAP: Record<string, { label: string; desc: string }> = {
-  import: { label: 'import', desc: 'ใบขนสินค้าขาเข้า (Import)' },
-  export: { label: 'export', desc: 'ใบขนสินค้าขาออก (Export)' },
-  goods: { label: 'goods', desc: 'บัญชีราคาสินค้า (Goods)' },
-  carmanifest: { label: 'carmanifest', desc: 'บัญชีสินค้าทางรถ (Car Manifest)' },
-  etransit: { label: 'etransit', desc: 'ถ่ายลำและผ่านแดน (e-Transit)' },
-  airmanifest: { label: 'airmanifest', desc: 'บัญชีสินค้าทางอากาศ (Air Manifest)' },
-  rgoods: { label: 'rgoods', desc: 'คืนอากรและคลังสินค้า (Rgoods)' },
+const ESAP_PROGRAM_MAP: Record<string, { label: string; desc: string; logo: string; code: string }> = {
+  import: { label: 'Import', desc: 'ใบขนสินค้าขาเข้า', logo: '/assets/programs/import.png', code: 'ESAP IM' },
+  export: { label: 'Export', desc: 'ใบขนสินค้าขาออก', logo: '/assets/programs/export.png', code: 'ESAP Ex' },
+  goods: { label: 'Goods', desc: 'บัญชีราคาสินค้า', logo: '/assets/programs/goods.png', code: 'ESAP GC' },
+  carmanifest: { label: 'Carmanifest', desc: 'บัญชีสินค้าทางรถ', logo: '/assets/programs/carmanifest.png', code: 'ESAP CAR' },
+  etransit: { label: 'eTransit', desc: 'ถ่ายลำและผ่านแดน', logo: '/assets/programs/etransit.png', code: 'ESAP TT' },
+  airmanifest: { label: 'Airmanifest', desc: 'บัญชีสินค้าทางอากาศ', logo: '/assets/programs/airmanifest.png', code: 'ESAP AIR' },
+  rgoods: { label: 'Rgoods', desc: 'คืนอากรและคลังสินค้า', logo: '/assets/programs/rgoods.png', code: 'ESAP FDA' },
 };
 
 interface MemberDashboardProps {
@@ -1056,17 +1056,23 @@ export const MemberDashboard: React.FC<MemberDashboardProps> = ({
                 }
 
                 return (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                     {activePrograms.map((progId) => {
-                      const progInfo = ESAP_PROGRAM_MAP[progId] || { label: progId, desc: progId };
+                      const progInfo = ESAP_PROGRAM_MAP[progId] || { label: progId, desc: progId, logo: '', code: '' };
                       return (
                         <div
                           key={progId}
-                          className="flex items-center gap-2 p-2.5 rounded-xl bg-amber-50/80 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 text-xs text-slate-900 dark:text-white"
+                          className="flex items-center gap-2.5 p-2.5 rounded-xl bg-amber-50/80 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 text-xs text-slate-900 dark:text-white"
                         >
-                          <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0" />
+                          {progInfo.logo && (
+                            <img
+                              src={progInfo.logo}
+                              alt={progInfo.label}
+                              className="h-8 w-auto max-w-[55px] object-contain shrink-0"
+                            />
+                          )}
                           <div className="min-w-0">
-                            <span className="font-bold font-mono text-amber-900 dark:text-amber-200 block truncate">
+                            <span className="font-bold text-amber-900 dark:text-amber-200 block truncate">
                               {progInfo.label}
                             </span>
                             <span className="text-[10px] text-slate-500 dark:text-slate-400 block truncate">

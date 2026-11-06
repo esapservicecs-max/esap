@@ -260,17 +260,25 @@ export const CsReviewModal: React.FC<CsReviewModalProps> = ({
                 {/* Selected ESAP Programs */}
                 {selectedApp.selectedPrograms && selectedApp.selectedPrograms.length > 0 && (
                   <div className="p-3 rounded-xl bg-amber-50/70 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/60 text-xs">
-                    <span className="font-semibold text-amber-900 dark:text-amber-200 block mb-1.5">
+                    <span className="font-semibold text-amber-900 dark:text-amber-200 block mb-2">
                       โปรแกรม ESAP ที่เลือกใช้งาน ({selectedApp.selectedPrograms.length} โปรแกรม):
                     </span>
-                    <div className="flex flex-wrap gap-1.5">
+                    <div className="flex flex-wrap gap-2">
                       {selectedApp.selectedPrograms.map((prog) => (
-                        <span
+                        <div
                           key={prog}
-                          className="px-2 py-0.5 rounded-md bg-white dark:bg-slate-800 border border-amber-300 dark:border-amber-700 text-amber-800 dark:text-amber-300 font-mono font-medium text-[11px]"
+                          className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white dark:bg-slate-800 border border-amber-300 dark:border-amber-700 text-amber-900 dark:text-amber-200 shadow-2xs"
                         >
-                          {prog}
-                        </span>
+                          <img
+                            src={`/assets/programs/${prog}.png`}
+                            alt={prog}
+                            className="h-5 w-auto object-contain"
+                            onError={(e) => {
+                              (e.target as HTMLElement).style.display = 'none';
+                            }}
+                          />
+                          <span className="font-bold text-xs capitalize">{prog}</span>
+                        </div>
                       ))}
                     </div>
                   </div>

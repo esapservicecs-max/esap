@@ -190,13 +190,13 @@ export const RegistrationFlow: React.FC<RegistrationFlowProps> = ({
   };
 
   const esapPrograms = [
-    { id: 'import', name: 'Import', desc: 'ใบขนสินค้าขาเข้า' },
-    { id: 'export', name: 'Export', desc: 'ใบขนสินค้าขาออก' },
-    { id: 'goods', name: 'Goods', desc: 'บัญชีราคาสินค้า' },
-    { id: 'carmanifest', name: 'Carmanifest', desc: 'บัญชีสินค้าทางรถ' },
-    { id: 'etransit', name: 'eTransit', desc: 'ถ่ายลำ/ผ่านแดน' },
-    { id: 'airmanifest', name: 'Airmanifest', desc: 'บัญชีสินค้าทางอากาศ' },
-    { id: 'rgoods', name: 'Rgoods', desc: 'คืนอากร/คลังสินค้า' },
+    { id: 'import', name: 'Import', desc: 'ใบขนสินค้าขาเข้า', logo: '/assets/programs/import.png', code: 'ESAP IM' },
+    { id: 'export', name: 'Export', desc: 'ใบขนสินค้าขาออก', logo: '/assets/programs/export.png', code: 'ESAP Ex' },
+    { id: 'goods', name: 'Goods', desc: 'บัญชีราคาสินค้า', logo: '/assets/programs/goods.png', code: 'ESAP GC' },
+    { id: 'carmanifest', name: 'Carmanifest', desc: 'บัญชีสินค้าทางรถ', logo: '/assets/programs/carmanifest.png', code: 'ESAP CAR' },
+    { id: 'etransit', name: 'eTransit', desc: 'ถ่ายลำ/ผ่านแดน', logo: '/assets/programs/etransit.png', code: 'ESAP TT' },
+    { id: 'airmanifest', name: 'Airmanifest', desc: 'บัญชีสินค้าทางอากาศ', logo: '/assets/programs/airmanifest.png', code: 'ESAP AIR' },
+    { id: 'rgoods', name: 'Rgoods', desc: 'คืนอากร/คลังสินค้า', logo: '/assets/programs/rgoods.png', code: 'ESAP FDA' },
   ];
 
   // Step 3: CA Documents
@@ -1597,7 +1597,7 @@ export const RegistrationFlow: React.FC<RegistrationFlowProps> = ({
               </div>
 
               {/* Programs Checklist Grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5 pt-1">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 pt-1">
                 {esapPrograms.map((prog) => {
                   const isChecked = selectedPrograms.includes(prog.id);
                   return (
@@ -1605,26 +1605,45 @@ export const RegistrationFlow: React.FC<RegistrationFlowProps> = ({
                       type="button"
                       key={prog.id}
                       onClick={() => toggleProgram(prog.id)}
-                      className={`flex items-start gap-2.5 p-3 text-left rounded-xl border transition-all cursor-pointer ${
+                      className={`group relative flex flex-col p-3 text-left rounded-2xl border transition-all cursor-pointer ${
                         isChecked
-                          ? 'bg-amber-50/90 dark:bg-amber-950/60 border-amber-500 ring-2 ring-amber-500/20 text-slate-900 dark:text-white shadow-2xs'
+                          ? 'bg-amber-50/90 dark:bg-amber-950/60 border-amber-500 ring-2 ring-amber-500/20 text-slate-900 dark:text-white shadow-xs'
                           : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 text-slate-700 dark:text-slate-300'
                       }`}
                     >
-                      <div
-                        className={`w-4 h-4 rounded-md border mt-0.5 flex items-center justify-center transition-colors shrink-0 ${
-                          isChecked
-                            ? 'bg-amber-600 border-amber-600 text-white'
-                            : 'border-slate-400 dark:border-slate-600 bg-white dark:bg-slate-800'
-                        }`}
-                      >
-                        {isChecked && <Check className="w-3 h-3 stroke-[3]" />}
+                      {/* Top Row: Checkbox & Code */}
+                      <div className="flex items-center justify-between w-full mb-2">
+                        <div
+                          className={`w-4 h-4 rounded-md border flex items-center justify-center transition-colors shrink-0 ${
+                            isChecked
+                              ? 'bg-amber-600 border-amber-600 text-white'
+                              : 'border-slate-400 dark:border-slate-600 bg-white dark:bg-slate-800 group-hover:border-amber-400'
+                          }`}
+                        >
+                          {isChecked && <Check className="w-3 h-3 stroke-[3]" />}
+                        </div>
+
+                        <span className="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700/80 text-slate-600 dark:text-slate-300">
+                          {prog.code}
+                        </span>
                       </div>
-                      <div className="truncate">
-                        <span className="text-xs font-bold block truncate leading-tight">
+
+                      {/* Official Program Logo from Screenshot */}
+                      <div className="w-full h-14 py-1 flex items-center justify-center bg-slate-50/80 dark:bg-slate-900/60 rounded-xl mb-2 overflow-hidden border border-slate-100 dark:border-slate-800/80">
+                        <img
+                          src={prog.logo}
+                          alt={prog.name}
+                          className="h-full w-auto max-w-[95%] object-contain drop-shadow-2xs transition-transform group-hover:scale-105"
+                          loading="lazy"
+                        />
+                      </div>
+
+                      {/* Name & Thai Description */}
+                      <div className="w-full min-w-0">
+                        <span className="text-xs font-bold block truncate leading-tight text-slate-900 dark:text-white">
                           {prog.name}
                         </span>
-                        <span className="text-[11px] text-slate-400 dark:text-slate-500 block truncate mt-0.5">
+                        <span className="text-[11px] text-slate-500 dark:text-slate-400 block truncate mt-0.5">
                           {prog.desc}
                         </span>
                       </div>
