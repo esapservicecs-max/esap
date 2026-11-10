@@ -276,9 +276,8 @@ export const MemberDashboard: React.FC<MemberDashboardProps> = ({
             { id: 'doc_attorney_id', name: 'สำเนาบัตรผู้รับมอบอำนาจ', type: 'attorney_id', fileName: 'Attorney_ID_Card.jpg', fileSize: '650 KB', uploadedAt: '10:32', status: 'valid' },
             { id: 'doc_2', name: 'หนังสือรับรองนิติบุคคล (DBD คัดสำเนาไม่เกิน 6 เดือน)', type: 'company_cert', fileName: 'DBD_Certificate_Latest.pdf', fileSize: '2.1 MB', uploadedAt: '10:33', status: 'valid' },
             { id: 'doc_3', name: 'สำเนาบัตรประชาชนกรรมการผู้มีอำนาจ (พร้อมลงนามรับรอง)', type: 'director_id', fileName: 'Director_ID_Signed.pdf', fileSize: '850 KB', uploadedAt: '10:34', status: 'valid' },
-            { id: 'doc_4', name: 'เอกสารคำขอใช้งาน Digital Certificate / ใบสมัคร CA (ไฟล์ .p12)', type: 'ca_request', fileName: 'digital_cert_esap.p12', fileSize: '45 KB', uploadedAt: '10:35', status: 'valid' },
           ],
-          caPassword: 'PasswordCA123!',
+          caPassword: '',
           status: 'approved',
           submittedAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
@@ -1083,29 +1082,6 @@ export const MemberDashboard: React.FC<MemberDashboardProps> = ({
                     </div>
                   </div>
 
-                  {/* Group 5: CA Password */}
-                  <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 space-y-3">
-                    <h4 className="text-xs font-bold text-indigo-600 dark:text-indigo-400 flex items-center gap-1.5">
-                      <Key className="w-3.5 h-3.5" />
-                      <span>{language === 'th' ? 'ขั้นตอนที่ 3: รหัสผ่าน CA (Password CA - .p12 / PFX)' : 'Step 3: CA Password'}</span>
-                    </h4>
-                    <div className="relative">
-                      <input
-                        type={showCaPasswordInDashboard ? 'text' : 'password'}
-                        value={editCaPassword}
-                        onChange={(e) => setEditCaPassword(e.target.value)}
-                        placeholder="กรอกรหัสผ่านสำหรับไฟล์ CA (.p12) ถ้ามี"
-                        className="w-full px-3 py-2 pr-10 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-mono"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowCaPasswordInDashboard(!showCaPasswordInDashboard)}
-                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
-                      >
-                        {showCaPasswordInDashboard ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      </button>
-                    </div>
-                  </div>
 
                   {/* Bio */}
                   <div>
@@ -1422,17 +1398,17 @@ export const MemberDashboard: React.FC<MemberDashboardProps> = ({
                     </div>
                   </div>
 
-                  {/* Section 4: สถานะเอกสารและรหัสผ่าน CA */}
+                  {/* Section 4: สถานะเอกสารประกอบการสมัคร */}
                   <div className="pt-4 border-t border-slate-100 dark:border-slate-800 space-y-3">
                     <div className="flex items-center justify-between">
                       <h4 className="font-bold text-xs text-indigo-600 dark:text-indigo-400 flex items-center gap-1.5 uppercase tracking-wider">
                         <FileCheck2 className="w-3.5 h-3.5" />
-                        <span>{language === 'th' ? '4. สถานะเอกสารและรหัสผ่าน CA' : '4. CA Documents & Password'}</span>
+                        <span>{language === 'th' ? '4. สถานะเอกสารประกอบการสมัคร (5 รายการ)' : '4. Application Documents'}</span>
                       </h4>
                       <span className="text-[10px] text-slate-400">ขั้นตอนที่ 3</span>
                     </div>
 
-                    {/* CA Documents list */}
+                    {/* Documents list */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                       {[
                         { title: 'สำเนา ภ.พ.20 (ภพ.20)', type: 'vat_pp20' },
@@ -1440,9 +1416,8 @@ export const MemberDashboard: React.FC<MemberDashboardProps> = ({
                         { title: 'สำเนาบัตรผู้รับมอบอำนาจ', type: 'attorney_id' },
                         { title: 'หนังสือรับรองนิติบุคคล (DBD คัดสำเนาไม่เกิน 6 เดือน)', type: 'company_cert' },
                         { title: 'สำเนาบัตรประชาชนกรรมการผู้มีอำนาจ (พร้อมลงนามรับรอง)', type: 'director_id' },
-                        { title: 'เอกสารคำขอใช้งาน Digital Certificate / ใบสมัคร CA (ไฟล์ .p12)', type: 'ca_request' },
                       ].map((docItem, idx) => {
-                        const matchedDoc = userApp?.documents?.find((d) => d.type === docItem.type && d.fileName);
+                        const matchedDoc = userApp?.documents?.find((d) => (d.type === docItem.type || (docItem.type === 'vat_pp20' && d.type === 'pp20')) && d.fileName);
                         return (
                           <div
                             key={idx}
@@ -1470,31 +1445,6 @@ export const MemberDashboard: React.FC<MemberDashboardProps> = ({
                           </div>
                         );
                       })}
-                    </div>
-
-                    {/* CA Password display */}
-                    <div className="p-3 rounded-xl bg-indigo-50/50 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/50 flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Key className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
-                        <div>
-                          <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 block">
-                            รหัสผ่าน CA (Password CA - .p12 / PFX)
-                          </span>
-                          <span className="text-[11px] font-mono text-slate-600 dark:text-slate-300">
-                            {showCaPasswordInDashboard
-                              ? (user.caPassword || userApp?.caPassword || '(ไม่ได้ระบุรหัสผ่าน)')
-                              : '••••••••••••'}
-                          </span>
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setShowCaPasswordInDashboard(!showCaPasswordInDashboard)}
-                        className="text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 flex items-center gap-1 px-2.5 py-1 rounded-lg hover:bg-indigo-100/50 dark:hover:bg-indigo-900/40"
-                      >
-                        {showCaPasswordInDashboard ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                        <span>{showCaPasswordInDashboard ? 'ซ่อน' : 'แสดง'}</span>
-                      </button>
                     </div>
                   </div>
 

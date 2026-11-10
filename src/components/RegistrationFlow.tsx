@@ -247,15 +247,6 @@ export const RegistrationFlow: React.FC<RegistrationFlowProps> = ({
         uploadedAt: '',
         status: 'pending',
       },
-      {
-        id: 'doc_4',
-        name: 'เอกสารคำขอใช้งาน Digital Certificate / ใบสมัคร CA (ไฟล์ .p12)',
-        type: 'ca_request',
-        fileName: '',
-        fileSize: '',
-        uploadedAt: '',
-        status: 'pending',
-      },
     ]
   );
   const [caPassword, setCaPassword] = useState(initialApplication?.caPassword || '');
@@ -384,17 +375,8 @@ export const RegistrationFlow: React.FC<RegistrationFlowProps> = ({
         uploadedAt: new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }),
         status: 'valid',
       },
-      {
-        id: 'doc_4',
-        name: 'เอกสารคำขอใช้งาน Digital Certificate / ใบสมัคร CA (ไฟล์ .p12)',
-        type: 'ca_request',
-        fileName: 'esap_ca_cert_trade.p12',
-        fileSize: '48.5 KB',
-        uploadedAt: new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }),
-        status: 'valid',
-      },
     ]);
-    setCaPassword('CaPass@1234');
+    setCaPassword('');
 
     setErrorMsg('');
   };
@@ -1841,7 +1823,7 @@ export const RegistrationFlow: React.FC<RegistrationFlowProps> = ({
                           <span>{t.uploadBtn}</span>
                           <input
                             type="file"
-                            accept={doc.type === 'ca_request' ? '.pdf,.jpg,.jpeg,.png,.p12,.pfx' : '.pdf,.jpg,.jpeg,.png'}
+                            accept=".pdf,.jpg,.jpeg,.png"
                             onChange={(e) => handleSimulateFileUpload(doc.id, e)}
                             className="hidden"
                           />
@@ -1849,41 +1831,6 @@ export const RegistrationFlow: React.FC<RegistrationFlowProps> = ({
                       )}
                     </div>
                   </div>
-
-                  {/* Password CA (ไฟล์ .p12) Input Field */}
-                  {doc.type === 'ca_request' && (
-                    <div className="mt-3.5 pt-3.5 border-t border-slate-200 dark:border-slate-700/80">
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-2">
-                        <label className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                          <KeyRound className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
-                          <span>รหัสผ่าน CA (Password CA - ไฟล์ .p12 / PFX)</span>
-                          <span className="text-[11px] font-normal text-slate-400 dark:text-slate-500">
-                            (ไม่บังคับกรอก - เว้นว่างได้)
-                          </span>
-                        </label>
-                        <span className="text-[11px] text-slate-500 dark:text-slate-400">
-                          รหัสสำหรับเปิดใช้งานใบรับรองดิจิทัลและถอดรหัส Private Key
-                        </span>
-                      </div>
-                      <div className="relative">
-                        <input
-                          type={showCaPassword ? 'text' : 'password'}
-                          value={caPassword}
-                          onChange={(e) => setCaPassword(e.target.value)}
-                          placeholder="กรอก Password CA สำหรับไฟล์ .p12 (ถ้ามี)"
-                          className="w-full px-3.5 py-2.5 pr-10 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs sm:text-sm font-mono placeholder:font-sans focus:ring-2 focus:ring-sky-500 outline-none transition-all"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowCaPassword(!showCaPassword)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 transition-colors"
-                          title={showCaPassword ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน'}
-                        >
-                          {showCaPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                        </button>
-                      </div>
-                    </div>
-                  )}
                 </div>
               ))}
             </div>
